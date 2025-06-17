@@ -69,9 +69,11 @@ beartrak-search/
    ```
 
 4. **Access the API**:
-   - API will be available at: `http://localhost:8000`
+   - API will be available at: `http://localhost:8000` (configured in `.env`)
    - Interactive docs: `http://localhost:8000/docs`
    - Health check: `http://localhost:8000/health`
+
+> **Port Configuration**: The server port is configured in the `.env` file (`PORT=8000`). You can override this by setting the `PORT` environment variable.
 
 ## Development Commands
 
