@@ -7,7 +7,7 @@ import os
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 
-from sqlalchemy import String, select
+from sqlalchemy import String, Text, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -32,25 +32,22 @@ class Base(DeclarativeBase):
     """Base class for all database models."""
 
 
-
 @dataclass
-class PropertyModel(Base):
+class RequestForProposalModel(Base):
     """
-    SQLAlchemy model for property data using dataclass syntax.
+    SQLAlchemy model for Request for Proposal data using dataclass syntax.
     This provides modern Python dataclass features with SQLAlchemy ORM.
     """
 
-    __tablename__ = "properties"
+    __tablename__ = "rfps"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    location: Mapped[str] = mapped_column(String(255), nullable=False)
-    type: Mapped[str] = mapped_column(String(100), nullable=False)
-    price: Mapped[str] = mapped_column(String(100), nullable=False)
-    details: Mapped[str] = mapped_column(String(500), nullable=False)
+    url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     def __repr__(self) -> str:
-        return f"PropertyModel(id={self.id}, name='{self.name}', location='{self.location}')"
+        return f"RequestForProposalModel(id={self.id}, name='{self.name}', url='{self.url}')"
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
@@ -76,74 +73,64 @@ async def init_database() -> None:
 
 async def populate_sample_data() -> None:
     """
-    Populate the database with sample data if it's empty.
-    This replaces the hardcoded SAMPLE_PROPERTIES.
+    Populate the database with sample RFP data if it's empty.
+    This replaces the hardcoded sample data.
     """
     async with async_session_maker() as session:
         # Check if data already exists
-        result = await session.execute(select(PropertyModel).limit(1))
+        result = await session.execute(select(RequestForProposalModel).limit(1))
         if result.first() is not None:
             return  # Data already exists
 
-        # Create sample properties
-        sample_properties = [
-            PropertyModel(
-                name="Modern Downtown Apartment",
-                location="Downtown Seattle",
-                type="Apartment",
-                price="$2,500/month",
-                details="2 bed, 2 bath, City views",
+        # Create sample RFPs
+        sample_rfps = [
+            RequestForProposalModel(
+                name="City Infrastructure Development Project",
+                url="https://seattle.gov/rfp/infrastructure-2024",
+                description="The City of Seattle is seeking qualified contractors for a comprehensive infrastructure development project including road improvements, bridge maintenance, and utility upgrades across downtown Seattle. This multi-phase project spans 18 months and requires expertise in urban planning, civil engineering, and project management. Proposals should include detailed timelines, budget estimates, and sustainability considerations.",
             ),
-            PropertyModel(
-                name="Cozy Suburban House",
-                location="Bellevue",
-                type="House",
-                price="$3,200/month",
-                details="3 bed, 2 bath, Garden",
+            RequestForProposalModel(
+                name="Software Development Services",
+                url="https://techcompany.com/rfp/software-dev",
+                description="We are looking for a software development partner to build a cloud-based customer relationship management system. The solution should support multi-tenant architecture, real-time analytics, mobile applications, and integration with existing enterprise systems. Required technologies include React, Node.js, PostgreSQL, and AWS cloud services.",
             ),
-            PropertyModel(
-                name="Luxury Waterfront Condo",
-                location="Capitol Hill",
-                type="Condo",
-                price="$4,000/month",
-                details="2 bed, 2 bath, Water view",
+            RequestForProposalModel(
+                name="Marketing Campaign for Healthcare Initiative",
+                url=None,
+                description="Healthcare Northwest is seeking a creative agency to develop and execute a comprehensive marketing campaign for our new community health initiative. The campaign should target diverse communities, include digital and traditional media, and demonstrate measurable impact on health awareness and program enrollment. Experience in healthcare marketing and multilingual capabilities preferred.",
             ),
-            PropertyModel(
-                name="Student-Friendly Studio",
-                location="University District",
-                type="Studio",
-                price="$1,200/month",
-                details="Studio, Near campus",
+            RequestForProposalModel(
+                name="University Research Data Management Platform",
+                url="https://university.edu/rfp/data-platform",
+                description="The University is requesting proposals for a comprehensive research data management platform that will serve multiple departments and research centers. The platform must support data storage, collaboration tools, compliance with federal research regulations, and integration with existing academic systems. Proposals should address scalability, security, and long-term maintenance.",
             ),
-            PropertyModel(
-                name="Family Townhouse",
-                location="Redmond",
-                type="Townhouse",
-                price="$2,800/month",
-                details="4 bed, 3 bath, Garage",
+            RequestForProposalModel(
+                name="Green Energy Consulting Services",
+                url="https://greenenergy.org/rfp-2024",
+                description="Our organization is seeking environmental consulting services to assess renewable energy opportunities for our corporate campus. The scope includes solar panel feasibility studies, energy efficiency audits, sustainability reporting, and development of a 10-year green energy transition plan. Consultants should have experience with LEED certification and local utility partnerships.",
             ),
         ]
 
-        # Add all properties to the session
-        for prop in sample_properties:
-            session.add(prop)
+        # Add all RFPs to the session
+        for rfp in sample_rfps:
+            session.add(rfp)
 
         # Commit the transaction
         await session.commit()
 
 
-async def search_properties_db(
+async def search_rfps_db(
     query: str, session: AsyncSession
-) -> list[PropertyModel]:
+) -> list[RequestForProposalModel]:
     """
-    Search properties in the database using async SQLAlchemy.
+    Search RFPs in the database using async SQLAlchemy.
 
     Args:
         query: The search query string
         session: Async database session
 
     Returns:
-        List of PropertyModel instances matching the search query
+        List of RequestForProposalModel instances matching the search query
     """
     if not query or len(query.strip()) < 2:
         return []
@@ -152,30 +139,28 @@ async def search_properties_db(
 
     # Create a comprehensive search across all relevant fields
     stmt = (
-        select(PropertyModel)
+        select(RequestForProposalModel)
         .where(
-            PropertyModel.name.ilike(query_lower)
-            | PropertyModel.location.ilike(query_lower)
-            | PropertyModel.type.ilike(query_lower)
-            | PropertyModel.details.ilike(query_lower)
+            RequestForProposalModel.name.ilike(query_lower)
+            | RequestForProposalModel.description.ilike(query_lower)
         )
-        .order_by(PropertyModel.name)
+        .order_by(RequestForProposalModel.name)
     )
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
 
 
-async def get_all_properties_db(session: AsyncSession) -> list[PropertyModel]:
+async def get_all_rfps_db(session: AsyncSession) -> list[RequestForProposalModel]:
     """
-    Get all properties from the database.
+    Get all RFPs from the database.
 
     Args:
         session: Async database session
 
     Returns:
-        List of all PropertyModel instances
+        List of all RequestForProposalModel instances
     """
-    stmt = select(PropertyModel).order_by(PropertyModel.name)
+    stmt = select(RequestForProposalModel).order_by(RequestForProposalModel.name)
     result = await session.execute(stmt)
     return list(result.scalars().all())

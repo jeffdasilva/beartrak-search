@@ -9,13 +9,13 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import (
-    PropertyModel,
+    RequestForProposalModel,
     get_async_session,
     init_database,
     populate_sample_data,
-    search_properties_db,
+    search_rfps_db,
 )
-from models import HealthResponse, PropertyResponse
+from models import HealthResponse, RFPResponse
 
 
 @asynccontextmanager
@@ -29,8 +29,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    title="BearTrak Search API",
-    description="Backend API for BearTrak Search frontend with SQLite database",
+    title="BearTrak RFP Search API",
+    description="Backend API for BearTrak RFP Search frontend with SQLite database",
     lifespan=lifespan,
 )
 
@@ -44,21 +44,16 @@ app.add_middleware(
 )
 
 
-def convert_to_property_response(property_model: PropertyModel) -> PropertyResponse:
-    """Convert SQLAlchemy PropertyModel to Pydantic PropertyResponse."""
-    return PropertyResponse(
-        id=property_model.id,
-        name=property_model.name,
-        location=property_model.location,
-        type=property_model.type,
-        price=property_model.price,
-        details=property_model.details,
+def convert_to_rfp_response(rfp_model: RequestForProposalModel) -> RFPResponse:
+    """Convert SQLAlchemy RequestForProposalModel to Pydantic RFPResponse."""
+    return RFPResponse(
+        id=rfp_model.id,
+        name=rfp_model.name,
+        url=rfp_model.url,
     )
 
 
-async def search_properties(
-    query: str, session: AsyncSession
-) -> list[PropertyResponse]:
+async def search_rfps(query: str, session: AsyncSession) -> list[RFPResponse]:
     """
     Search function using async database operations.
 
@@ -67,56 +62,55 @@ async def search_properties(
         session: Async database session
 
     Returns:
-        List of PropertyResponse objects matching the search query
+        List of RFPResponse objects matching the search query
     """
     if not query or len(query.strip()) < 2:
         return []
 
     # Use the database search function
-    property_models = await search_properties_db(query, session)
+    rfp_models = await search_rfps_db(query, session)
 
     # Convert to Pydantic models for the API response
-    return [convert_to_property_response(prop) for prop in property_models]
+    return [convert_to_rfp_response(rfp) for rfp in rfp_models]
 
 
-def generate_results_html(properties: list[PropertyResponse], query: str) -> str:
+def generate_results_html(rfps: list[RFPResponse], query: str) -> str:
     """
-    Generate HTML table for search results
+    Generate HTML table for RFP search results
 
     Args:
-        properties: List of properties to display
+        rfps: List of RFPs to display
         query: The search query for context
 
     Returns:
         HTML string containing the results table or no results message
     """
-    if not properties:
+    if not rfps:
         if query.strip():
-            return f'<div class="no-results">No results found for "{query}"</div>'
+            return f'<div class="no-results">No RFPs found for "{query}"</div>'
         return '<div class="no-results">Start typing to search...</div>'
 
     html = """
     <table>
         <thead>
             <tr>
-                <th>Property</th>
-                <th>Location</th>
-                <th>Type</th>
-                <th>Price</th>
-                <th>Details</th>
+                <th>RFP Name</th>
+                <th>More Information</th>
             </tr>
         </thead>
         <tbody>
     """
 
-    for prop in properties:
+    for rfp in rfps:
+        url_cell = (
+            f'<a href="{rfp.url}" target="_blank">View Details</a>'
+            if rfp.url
+            else "N/A"
+        )
         html += f"""
             <tr>
-                <td>{prop.name}</td>
-                <td>{prop.location}</td>
-                <td>{prop.type}</td>
-                <td>{prop.price}</td>
-                <td>{prop.details}</td>
+                <td>{rfp.name}</td>
+                <td>{url_cell}</td>
             </tr>
         """
 
@@ -136,7 +130,7 @@ async def root() -> dict[str, str]:
     Returns:
         Dictionary with status message
     """
-    return {"message": "BearTrak Search API is running"}
+    return {"message": "BearTrak RFP Search API is running"}
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -176,7 +170,7 @@ async def search(
 ) -> HTMLResponse:
     """
     Search endpoint that returns HTML for HTMX frontend.
-    Now uses async database operations.
+    Now uses async database operations for RFP search.
 
     Args:
         query: The search query from the form
@@ -186,7 +180,7 @@ async def search(
         HTML response containing search results
     """
     # Perform search using async database operations
-    results: list[PropertyResponse] = await search_properties(query, session)
+    results: list[RFPResponse] = await search_rfps(query, session)
 
     # Generate HTML response
     html_response: str = generate_results_html(results, query)

@@ -39,7 +39,7 @@ def test_api_integration() -> None:
         assert health_data["service"] == "BearTrak Search API"
 
         # Test search endpoint with valid query
-        search_data = {"query": "apartment"}
+        search_data = {"query": "software"}
         response = requests.post(f"{base_url}/api/search", data=search_data, timeout=5)
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]

@@ -1,6 +1,6 @@
-# BearTrak Search Backend
+# BearTrak RFP Search Backend
 
-A FastAPI backend for the BearTrak Search application that provides search functionality with HTMX-compatible HTML responses.
+A FastAPI backend for the BearTrak RFP Search application that provides search functionality for Request for Proposal (RFP) data with HTMX-compatible HTML responses.
 
 ## Features
 
@@ -8,7 +8,7 @@ A FastAPI backend for the BearTrak Search application that provides search funct
 - **HTMX Integration**: Returns HTML responses for seamless frontend integration
 - **CORS Support**: Configured for cross-origin requests
 - **Real-time Search**: Supports live search as users type
-- **Sample Data**: Includes sample property data for testing
+- **Sample Data**: Includes sample RFP data for testing
 - **uv Package Management**: Modern Python package and project management
 
 ## Prerequisites
@@ -43,13 +43,13 @@ beartrak-search/
 ├── README.md                # This file
 ├── tests/                   # Test suite
 │   ├── __init__.py
-│   ├── conftest.py          # Test fixtures and configuration
-│   ├── test_app.py          # FastAPI application tests
-│   ├── test_health.py       # Health endpoint tests
-│   ├── test_search.py       # Search endpoint tests
-│   ├── test_search_logic.py # Search logic unit tests
-│   ├── test_integration.py  # Integration tests
-│   └── test_api_legacy.py   # Legacy API tests
+│   ├── conftest.py              # Test fixtures and configuration
+│   ├── test_app.py              # FastAPI application tests
+│   ├── test_health.py           # Health endpoint tests
+│   ├── test_search.py           # Search endpoint tests
+│   ├── test_search_logic_new.py # RFP search logic unit tests
+│   ├── test_integration.py      # Integration tests
+│   └── test_api_legacy.py       # Manual API testing script
 └── .github/
     ├── copilot-instructions.md # Development guidelines
     └── workflows/             # CI/CD workflows
@@ -270,7 +270,7 @@ make start
 
 ### Adding New Features
 
-1. **Modify Search Logic**: Update the `search_properties()` function in `main.py`
+1. **Modify Search Logic**: Update the `search_rfps()` function in `main.py`
 2. **Add New Endpoints**: Create new route handlers in `main.py`  
 3. **Update HTML Templates**: Modify the `generate_results_html()` function
 4. **Test Your Changes**: Run `make qa` to ensure quality
@@ -278,7 +278,7 @@ make start
 
 ### Sample Data
 
-The application includes sample property data for testing. In production, replace the `SAMPLE_PROPERTIES` list with your actual data source (database, API, etc.).
+The application includes sample RFP data for testing. The database is automatically populated with sample Request for Proposal records including software development, marketing, and research platform RFPs.
 
 ## Configuration
 

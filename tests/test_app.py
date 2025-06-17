@@ -16,14 +16,14 @@ def test_app_is_fastapi_instance() -> None:
 
 def test_app_title() -> None:
     """Test that app has the correct title."""
-    assert app.title == "BearTrak Search API"
+    assert app.title == "BearTrak RFP Search API"
 
 
 def test_app_description() -> None:
     """Test that app has the correct description."""
     assert (
         app.description
-        == "Backend API for BearTrak Search frontend with SQLite database"
+        == "Backend API for BearTrak RFP Search frontend with SQLite database"
     )
 
 
@@ -100,10 +100,10 @@ def test_openapi_schema_generation() -> None:
     assert "paths" in schema
 
     # Check info section
-    assert schema["info"]["title"] == "BearTrak Search API"
+    assert schema["info"]["title"] == "BearTrak RFP Search API"
     assert (
         schema["info"]["description"]
-        == "Backend API for BearTrak Search frontend with SQLite database"
+        == "Backend API for BearTrak RFP Search frontend with SQLite database"
     )
 
 

@@ -3,42 +3,33 @@ Pydantic models for FastAPI request/response serialization.
 These models handle data validation and serialization for the API layer.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class PropertyResponse(BaseModel):
+class RFPResponse(BaseModel):
     """
-    Pydantic model for property responses in the FastAPI layer.
+    Pydantic model for RFP responses in the FastAPI layer.
     This handles serialization from SQLAlchemy models to JSON/dict.
+    Note: description field is excluded from API responses as it's only used for search.
     """
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
-    name: str = Field(..., description="Property name")
-    location: str = Field(..., description="Property location")
-    type: str = Field(..., description="Property type (Apartment, House, etc.)")
-    price: str = Field(..., description="Property price")
-    details: str = Field(..., description="Additional property details")
-
-    class Config:
-        """Pydantic configuration."""
-
-        from_attributes = True  # Allows conversion from SQLAlchemy models
+    name: str = Field(..., description="RFP name")
+    url: str | None = Field(None, description="Optional URL for more information")
 
 
-class PropertyCreate(BaseModel):
+class RFPCreate(BaseModel):
     """
-    Pydantic model for creating new properties.
-    Used for POST requests to add new properties.
+    Pydantic model for creating new RFPs.
+    Used for POST requests to add new RFPs.
     """
 
-    name: str = Field(..., min_length=1, max_length=255, description="Property name")
-    location: str = Field(
-        ..., min_length=1, max_length=255, description="Property location"
-    )
-    type: str = Field(..., min_length=1, max_length=100, description="Property type")
-    price: str = Field(..., min_length=1, max_length=100, description="Property price")
-    details: str = Field(
-        ..., min_length=1, max_length=500, description="Property details"
+    name: str = Field(..., min_length=1, max_length=255, description="RFP name")
+    url: str | None = Field(None, max_length=2048, description="Optional URL")
+    description: str | None = Field(
+        None, description="Optional RFP description for search purposes"
     )
 
 

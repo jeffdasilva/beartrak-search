@@ -1,4 +1,3 @@
-.PHONY: help install dev start server type-check test clean lint format format-check format-ruff format-ruff-check format-isort format-isort-check format-black format-black-check format-legacy format-legacy-check lint-ruff qa ci all
 .DEFAULT_GOAL := help
 
 # Variables
@@ -6,6 +5,7 @@ PYTHON_FILES := main.py tests/
 UV := uv
 PORT := 8000
 
+.PHONY: help
 help: ## Show this help message
 	@echo "🐻 BearTrak Search API - Available Make Targets"
 	@echo "================================================="
@@ -54,14 +54,17 @@ help: ## Show this help message
 	@echo "All-in-one:"
 	@echo "  all              Run complete setup and validation"
 
+.PHONY: install
 install: ## Install production dependencies
 	@echo "📦 Installing dependencies with uv..."
 	@$(UV) sync --no-dev
 
+.PHONY: dev
 dev: ## Install all dependencies (including dev)
 	@echo "📦 Installing all dependencies with uv..."
 	@$(UV) sync
 
+.PHONY: start
 start: install ## Start the development server
 	@echo "🚀 Starting BearTrak Search API..."
 	@echo "📍 Server will be available at: http://localhost:$(PORT)"
@@ -71,85 +74,111 @@ start: install ## Start the development server
 	@echo "🔄 Starting server..."
 	@$(UV) run uvicorn main:app --host 0.0.0.0 --port $(PORT) --reload
 
+.PHONY: server
 server: start ## Alias for start
 
+.PHONY: check
+check: lint ## Run all checks (linting + type checking)
+	@echo "✅ All checks passed!"
+
+.PHONY: type-check
 type-check: ## Run type checking with mypy
 	@echo "🔍 Running mypy type checking..."
 	@$(UV) run mypy $(PYTHON_FILES)
 	@echo "✅ All type checks passed!"
 
+.PHONY: lint-ruff
 lint-ruff: ## Run linting with ruff
 	@echo "🔍 Running ruff linting..."
 	@$(UV) run ruff check $(PYTHON_FILES)
 	@echo "✅ Ruff linting passed!"
 
+.PHONY: lint
 lint: type-check lint-ruff format-check ## Run all linting and formatting checks
 	@echo "✅ All linting and formatting checks passed!"
 
+.PHONY: format
 format: format-ruff ## Format code with ruff (preferred)
 	@echo "✅ Code formatting complete!"
 
+.PHONY: format-check
 format-check: format-ruff-check ## Check if code is properly formatted with ruff (preferred)
 	@echo "✅ Code formatting check complete!"
 
+.PHONY: format-ruff
 format-ruff: ## Format code with ruff (preferred formatter)
 	@echo "🎨 Formatting code with ruff..."
 	@$(UV) run ruff format $(PYTHON_FILES)
 	@$(UV) run ruff check --fix $(PYTHON_FILES)
 
+.PHONY: format-ruff-check
 format-ruff-check: ## Check code formatting with ruff
 	@echo "🔍 Checking code formatting with ruff..."
 	@$(UV) run ruff format --check $(PYTHON_FILES)
 	@$(UV) run ruff check $(PYTHON_FILES)
 
+.PHONY: format-isort
 format-isort: ## Sort imports with isort (legacy - prefer ruff)
 	@echo "📝 Sorting imports with isort..."
 	@$(UV) run isort $(PYTHON_FILES)
 
+.PHONY: format-isort-check
 format-isort-check: ## Check import sorting with isort (legacy - prefer ruff)
 	@echo "📋 Checking import sorting with isort..."
 	@$(UV) run isort --check-only --diff $(PYTHON_FILES)
 
+.PHONY: format-black
 format-black: ## Format code with black (legacy - prefer ruff)
 	@echo "🎨 Formatting code with black..."
 	@$(UV) run black $(PYTHON_FILES)
 
+.PHONY: format-black-check
 format-black-check: ## Check code formatting with black (legacy - prefer ruff)
 	@echo "🔍 Checking code formatting with black..."
 	@$(UV) run black --check --diff $(PYTHON_FILES)
 
+.PHONY: format-legacy
 format-legacy: format-isort format-black ## Format code with legacy tools (isort + black)
 	@echo "✅ Legacy code formatting complete!"
 
+.PHONY: format-legacy-check
 format-legacy-check: format-isort-check format-black-check ## Check if code is properly formatted with legacy tools
 	@echo "✅ Legacy code formatting check complete!"
 
+.PHONY: qa
 qa: lint test ## Run all quality checks (linting + tests)
 	@echo "✅ All quality checks passed!"
 
+.PHONY: ci
 ci: format-check type-check ## Run CI checks (for automation)
 	@echo "✅ CI checks complete!"
 
+.PHONY: test
 test: ## Run unit tests with pytest
 	@echo "🧪 Running unit tests with pytest..."
 	@$(UV) run pytest tests/ -v --ignore=tests/test_integration.py
 
-test-legacy: ## Run the legacy API test script
-	@echo "🧪 Running legacy API test..."
+.PHONY: test-legacy
+test-legacy: ## Run the manual API test script
+	@echo "🧪 Running manual API test..."
 	@$(UV) run python tests/test_api_legacy.py
 
+.PHONY: test-integration
 test-integration: ## Run integration tests (requires running server)
 	@echo "🧪 Running integration tests..."
 	@$(UV) run python tests/test_integration.py
 
+.PHONY: test-all
 test-all: ## Run all tests including integration (requires running server)
 	@echo "🧪 Running all tests (unit + integration)..."
 	@$(UV) run pytest tests/ -v
 
+.PHONY: test-health
 test-health: ## Quick health check test
 	@echo "🩺 Testing health endpoint..."
 	@curl -s http://localhost:$(PORT)/health | $(UV) run python -m json.tool || echo "❌ Server not running on port $(PORT)"
 
+.PHONY: clean
 clean: ## Clean up cache files and temporary directories
 	@echo "🧹 Cleaning up..."
 	@rm -rf __pycache__/ .mypy_cache/ .pytest_cache/ .ruff_cache/
@@ -157,17 +186,21 @@ clean: ## Clean up cache files and temporary directories
 	@find . -type d -name "__pycache__" -delete
 	@echo "✅ Cleanup complete!"
 
+.PHONY: deps-check
 deps-check: ## Check if uv is installed
 	@command -v $(UV) >/dev/null 2>&1 || { echo "❌ uv is not installed. Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh"; exit 1; }
 	@echo "✅ uv is installed"
 
+.PHONY: upgrade
 upgrade: ## Upgrade all dependencies
 	@echo "⬆️  Upgrading dependencies..."
 	@$(UV) sync --upgrade
 
+.PHONY: all
 all: clean deps-check dev type-check test ## Run complete setup and validation
 	@echo "🎉 All tasks completed successfully!"
 
+.PHONY: info
 info: ## Show project information
 	@echo "📋 Project Information"
 	@echo "======================"
@@ -191,3 +224,4 @@ info: ## Show project information
 	@echo "🔧 Legacy Tools (still available):"
 	@echo "  - black (use 'make format-black')"
 	@echo "  - isort (use 'make format-isort')"
+

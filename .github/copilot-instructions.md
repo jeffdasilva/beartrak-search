@@ -1,8 +1,8 @@
 <!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
 
-# BearTrak Search Backend
+# BearTrak RFP Search Backend
 
-This is a FastAPI backend project for the BearTrak Search frontend application. The API provides search functionality that returns HTML responses for HTMX integration.
+This is a FastAPI backend project for the BearTrak RFP Search frontend application. The API provides search functionality for Request for Proposal (RFP) data that returns HTML responses for HTMX integration.
 
 ## Key Guidelines:
 
@@ -12,7 +12,7 @@ This is a FastAPI backend project for the BearTrak Search frontend application. 
 - Follow RESTful API design principles
 - Use proper error handling and status codes
 - Maintain consistent response formats
-- Focus on search functionality and data retrieval
+- Focus on RFP search functionality and data retrieval
 
 ## Development Guidelines:
 

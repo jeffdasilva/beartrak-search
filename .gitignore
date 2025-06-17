@@ -149,6 +149,9 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 
+# Ruff
+.ruff_cache/
+
 # Cov
 .coverage
 .coverage.*
@@ -172,6 +175,10 @@ Thumbs.db
 # UV specific
 .uv_cache/
 
+# Python package managers
+.pdm-build/
+.pdm-python
+
 # FastAPI specific
 *.db
 *.sqlite
@@ -189,3 +196,6 @@ logs/
 # Temporary files
 tmp/
 temp/
+debug_*.py
+test_*.py.bak
+*.tmp

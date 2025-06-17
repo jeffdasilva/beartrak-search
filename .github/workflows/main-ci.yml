@@ -71,7 +71,7 @@ jobs:
         curl -f http://localhost:8000/health
         
         # Test basic search functionality
-        curl -f -X POST -d "query=apartment" http://localhost:8000/api/search
+        curl -f -X POST -d "query=software" http://localhost:8000/api/search
         
         # Cleanup
         kill $SERVER_PID || true

@@ -58,19 +58,19 @@ def test_search_endpoint_with_short_query_returns_empty_result(
     assert response.status_code == status.HTTP_200_OK
 
     html_content = response.text
-    # Should contain "No results found" message for short query
-    assert "No results found" in html_content
+    # Should contain "No RFPs found" message for short query
+    assert "No RFPs found" in html_content
     assert "<table>" not in html_content  # No table for queries that return no results
 
 
 def test_search_endpoint_case_insensitive(client: TestClient) -> None:
     """Test that search is case insensitive."""
-    # Test with different cases
+    # Test with different cases using RFP data
     test_cases = [
-        {"query": "apartment"},
-        {"query": "APARTMENT"},
-        {"query": "Apartment"},
-        {"query": "aPaRtMeNt"},
+        {"query": "software"},
+        {"query": "SOFTWARE"},
+        {"query": "Software"},
+        {"query": "SoFtWaRe"},
     ]
 
     results: list[str] = []
@@ -85,24 +85,28 @@ def test_search_endpoint_case_insensitive(client: TestClient) -> None:
 
 def test_search_endpoint_partial_match(client: TestClient) -> None:
     """Test that search works with partial matches."""
-    # Test partial matches
+    # Test partial matches using RFP data
     response = client.post(
-        "/api/search", data={"query": "down"}
-    )  # Should match "downtown"
+        "/api/search", data={"query": "develop"}
+    )  # Should match "Software Development"
     assert response.status_code == status.HTTP_200_OK
 
     html_content = response.text
-    # Should find results containing "downtown"
+    # Should find results containing "develop"
     assert html_content.count("<tr>") > 1  # More than just header
 
 
 def test_search_endpoint_searches_multiple_fields(client: TestClient) -> None:
-    """Test that search works across name, location, type, and details."""
+    """Test that search works across RFP name and description fields."""
     search_terms = [
-        {"query": "Seattle", "field": "location"},
-        {"query": "Apartment", "field": "type"},
-        {"query": "bath", "field": "details"},
-        {"query": "Modern", "field": "name"},
+        {"query": "Software", "field": "name"},
+        {"query": "development", "field": "name"},
+        {
+            "query": "modern",
+            "field": "description",
+        },  # This should match "modern web application"
+        {"query": "marketing", "field": "name"},
+        {"query": "healthcare", "field": "description"},
     ]
 
     for search_data in search_terms:
@@ -112,7 +116,7 @@ def test_search_endpoint_searches_multiple_fields(client: TestClient) -> None:
         html_content = response.text
         # Should find results
         assert html_content.count("<tr>") > 1, (
-            f"No results found for {search_data['field']} search"
+            f"No results found for {search_data['field']} search with query '{search_data['query']}'"
         )
 
 
@@ -123,8 +127,8 @@ def test_search_endpoint_returns_expected_table_headers(
     response = client.post("/api/search", data=sample_search_data)
     html_content = response.text
 
-    # Check for expected headers
-    expected_headers = ["Property", "Location", "Type", "Price", "Details"]
+    # Check for expected RFP headers
+    expected_headers = ["RFP Name", "More Information"]
     for header in expected_headers:
         assert f"<th>{header}</th>" in html_content
 
@@ -135,8 +139,8 @@ def test_search_endpoint_with_no_results(client: TestClient) -> None:
     assert response.status_code == status.HTTP_200_OK
 
     html_content = response.text
-    # Should contain "No results found" message
-    assert "No results found" in html_content
+    # Should contain "No RFPs found" message
+    assert "No RFPs found" in html_content
     assert "<table>" not in html_content  # No table when no results
 
 

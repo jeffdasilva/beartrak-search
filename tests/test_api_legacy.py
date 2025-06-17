@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Test script for BearTrak Search API
-Run with: uv run python test_api.py
+Manual test script for BearTrak RFP Search API
+This is a simple manual testing script that can be run independently.
+Run with: uv run python tests/test_api_legacy.py
 """
 
 import time
@@ -23,7 +24,7 @@ def test_api() -> None:
 
         # Test search endpoint
         print("\nTesting search endpoint...")
-        search_data: dict[str, str] = {"query": "apartment"}
+        search_data: dict[str, str] = {"query": "software"}
         response = requests.post(f"{base_url}/api/search", data=search_data)
         print(f"Search test: {response.status_code}")
         print(f"Response preview: {response.text[:200]}...")
