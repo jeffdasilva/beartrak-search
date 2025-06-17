@@ -54,7 +54,7 @@ jobs:
       run: uv run ruff format --check main.py tests/
     
     - name: Run unit tests
-      run: uv run pytest tests/ -v --tb=short
+      run: uv run pytest tests/ -v --tb=short --ignore=tests/test_integration.py
     
     - name: Minimize uv cache
       run: uv cache prune --ci

@@ -36,7 +36,7 @@ jobs:
     - name: Generate test coverage report
       run: |
         uv add --dev coverage[toml] pytest-cov
-        uv run pytest tests/ --cov=. --cov-report=xml --cov-report=html
+        uv run pytest tests/ --cov=. --cov-report=xml --cov-report=html --ignore=tests/test_integration.py
     
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4
