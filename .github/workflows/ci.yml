@@ -22,10 +22,6 @@ jobs:
     - name: Set up uv
       # Install the latest version of uv
       uses: astral-sh/setup-uv@v4
-      with:
-        enable-cache: true
-        cache-dependency-glob: "uv.lock"
-        cache-suffix: "ci-${{ matrix.python-version }}"
     
     - name: Set up Python ${{ matrix.python-version }}
       run: uv python install ${{ matrix.python-version }}
@@ -56,10 +52,6 @@ jobs:
     
     - name: Set up uv
       uses: astral-sh/setup-uv@v4
-      with:
-        enable-cache: true
-        cache-dependency-glob: "uv.lock"
-        cache-suffix: "integration"
     
     - name: Set up Python 3.12
       run: uv python install 3.12
@@ -96,10 +88,6 @@ jobs:
     
     - name: Set up uv
       uses: astral-sh/setup-uv@v4
-      with:
-        enable-cache: true
-        cache-dependency-glob: "uv.lock"
-        cache-suffix: "quality"
     
     - name: Set up Python 3.12
       run: uv python install 3.12
@@ -125,10 +113,6 @@ jobs:
     
     - name: Set up uv
       uses: astral-sh/setup-uv@v4
-      with:
-        enable-cache: true
-        cache-dependency-glob: "uv.lock"
-        cache-suffix: "security"
     
     - name: Set up Python 3.12
       run: uv python install 3.12
