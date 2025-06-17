@@ -4,7 +4,7 @@
 # Variables
 PYTHON_FILES := main.py tests/
 UV := uv
-PORT := 8001
+PORT := 8000
 
 help: ## Show this help message
 	@echo "🐻 BearTrak Search API - Available Make Targets"

@@ -24,8 +24,8 @@ def wait_for_server(base_url: str, timeout: int = 30) -> bool:
 
 def test_api_integration() -> None:
     """Integration test for the BearTrak Search API."""
-    base_url = "http://localhost:8001"  # Updated to match Makefile port
-
+    base_url = "http://localhost:8000"  # Updated to match .env PORT
+    
     # Note: This test requires the server to be running
     # Run with: make start (in background) && make test-integration
 
@@ -65,7 +65,7 @@ def test_api_integration() -> None:
 
     except requests.exceptions.ConnectionError:
         print(
-            "❌ Could not connect to API. Make sure the server is running on localhost:8001"
+            "❌ Could not connect to API. Make sure the server is running on localhost:8000"
         )
         print("   Run: make start (in another terminal)")
         raise

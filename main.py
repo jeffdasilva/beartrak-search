@@ -1,5 +1,5 @@
 from typing import TypedDict
-
+import os
 import uvicorn
 from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -188,7 +188,9 @@ async def health_check() -> dict[str, str]:
 
 def main() -> None:
     """Main entry point for the application"""
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("main:app", host=host, port=port, reload=True)
 
 
 if __name__ == "__main__":
