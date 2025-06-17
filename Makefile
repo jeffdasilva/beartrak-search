@@ -1,0 +1,188 @@
+.PHONY: help install dev start server type-check test clean lint format format-check format-ruff format-ruff-check format-isort format-isort-check format-black format-black-check format-legacy format-legacy-check lint-ruff qa ci all
+.DEFAULT_GOAL := help
+
+# Variables
+PYTHON_FILES := main.py tests/
+UV := uv
+PORT := 8001
+
+help: ## Show this help message
+	@echo "🐻 BearTrak Search API - Available Make Targets"
+	@echo "================================================="
+	@echo ""
+	@echo "Setup and Installation:"
+	@echo "  install          Install production dependencies"
+	@echo "  dev              Install all dependencies (including dev)"
+	@echo ""
+	@echo "Development:"
+	@echo "  start            Start the development server"
+	@echo "  server           Alias for start"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  type-check       Run type checking with mypy"
+	@echo "  lint-ruff        Run linting with ruff"
+	@echo "  lint             Run all linting and formatting checks"
+	@echo ""
+	@echo "Code Formatting (Preferred - Ruff):"
+	@echo "  format           Format code with ruff (preferred)"
+	@echo "  format-check     Check if code is properly formatted with ruff"
+	@echo "  format-ruff      Format code with ruff (preferred formatter)"
+	@echo "  format-ruff-check Check code formatting with ruff"
+	@echo ""
+	@echo "Code Formatting (Legacy):"
+	@echo "  format-isort     Sort imports with isort (legacy - prefer ruff)"
+	@echo "  format-black     Format code with black (legacy - prefer ruff)"
+	@echo "  format-legacy    Format code with legacy tools (isort + black)"
+	@echo ""
+	@echo "Quality Assurance:"
+	@echo "  qa               Run all quality checks (linting + tests)"
+	@echo "  ci               Run CI checks (for automation)"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test             Run unit tests with pytest"
+	@echo "  test-legacy      Run the legacy API test script"
+	@echo "  test-integration Run integration tests (requires running server)"
+	@echo "  test-health      Quick health check test"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  clean            Clean up cache files and temporary directories"
+	@echo "  deps-check       Check if uv is installed"
+	@echo "  upgrade          Upgrade all dependencies"
+	@echo "  info             Show project information"
+	@echo ""
+	@echo "All-in-one:"
+	@echo "  all              Run complete setup and validation"
+
+install: ## Install production dependencies
+	@echo "📦 Installing dependencies with uv..."
+	@$(UV) sync --no-dev
+
+dev: ## Install all dependencies (including dev)
+	@echo "📦 Installing all dependencies with uv..."
+	@$(UV) sync
+
+start: dev ## Start the development server
+	@echo "🚀 Starting BearTrak Search API..."
+	@echo "📍 Server will be available at: http://localhost:$(PORT)"
+	@echo "📚 API documentation: http://localhost:$(PORT)/docs"
+	@echo "❤️  Health check: http://localhost:$(PORT)/health"
+	@echo ""
+	@echo "🔄 Starting server..."
+	@$(UV) run uvicorn main:app --host 0.0.0.0 --port $(PORT) --reload
+
+server: start ## Alias for start
+
+type-check: ## Run type checking with mypy
+	@echo "🔍 Running mypy type checking..."
+	@$(UV) run mypy $(PYTHON_FILES)
+	@echo "✅ All type checks passed!"
+
+lint-ruff: ## Run linting with ruff
+	@echo "🔍 Running ruff linting..."
+	@$(UV) run ruff check $(PYTHON_FILES)
+	@echo "✅ Ruff linting passed!"
+
+lint: type-check lint-ruff format-check ## Run all linting and formatting checks
+	@echo "✅ All linting and formatting checks passed!"
+
+format: format-ruff ## Format code with ruff (preferred)
+	@echo "✅ Code formatting complete!"
+
+format-check: format-ruff-check ## Check if code is properly formatted with ruff (preferred)
+	@echo "✅ Code formatting check complete!"
+
+format-ruff: ## Format code with ruff (preferred formatter)
+	@echo "🎨 Formatting code with ruff..."
+	@$(UV) run ruff format $(PYTHON_FILES)
+	@$(UV) run ruff check --fix $(PYTHON_FILES)
+
+format-ruff-check: ## Check code formatting with ruff
+	@echo "🔍 Checking code formatting with ruff..."
+	@$(UV) run ruff format --check $(PYTHON_FILES)
+	@$(UV) run ruff check $(PYTHON_FILES)
+
+format-isort: ## Sort imports with isort (legacy - prefer ruff)
+	@echo "📝 Sorting imports with isort..."
+	@$(UV) run isort $(PYTHON_FILES)
+
+format-isort-check: ## Check import sorting with isort (legacy - prefer ruff)
+	@echo "📋 Checking import sorting with isort..."
+	@$(UV) run isort --check-only --diff $(PYTHON_FILES)
+
+format-black: ## Format code with black (legacy - prefer ruff)
+	@echo "🎨 Formatting code with black..."
+	@$(UV) run black $(PYTHON_FILES)
+
+format-black-check: ## Check code formatting with black (legacy - prefer ruff)
+	@echo "🔍 Checking code formatting with black..."
+	@$(UV) run black --check --diff $(PYTHON_FILES)
+
+format-legacy: format-isort format-black ## Format code with legacy tools (isort + black)
+	@echo "✅ Legacy code formatting complete!"
+
+format-legacy-check: format-isort-check format-black-check ## Check if code is properly formatted with legacy tools
+	@echo "✅ Legacy code formatting check complete!"
+
+qa: lint test ## Run all quality checks (linting + tests)
+	@echo "✅ All quality checks passed!"
+
+ci: format-check type-check ## Run CI checks (for automation)
+	@echo "✅ CI checks complete!"
+
+test: ## Run unit tests with pytest
+	@echo "🧪 Running unit tests with pytest..."
+	@$(UV) run pytest tests/ -v
+
+test-legacy: ## Run the legacy API test script
+	@echo "🧪 Running legacy API test..."
+	@$(UV) run python tests/test_api_legacy.py
+
+test-integration: ## Run integration tests (requires running server)
+	@echo "🧪 Running integration tests..."
+	@$(UV) run python tests/test_integration.py
+
+test-health: ## Quick health check test
+	@echo "🩺 Testing health endpoint..."
+	@curl -s http://localhost:$(PORT)/health | python -m json.tool || echo "❌ Server not running on port $(PORT)"
+
+clean: ## Clean up cache files and temporary directories
+	@echo "🧹 Cleaning up..."
+	@rm -rf __pycache__/ .mypy_cache/ .pytest_cache/ .ruff_cache/
+	@find . -type f -name "*.pyc" -delete
+	@find . -type d -name "__pycache__" -delete
+	@echo "✅ Cleanup complete!"
+
+deps-check: ## Check if uv is installed
+	@command -v $(UV) >/dev/null 2>&1 || { echo "❌ uv is not installed. Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh"; exit 1; }
+	@echo "✅ uv is installed"
+
+upgrade: ## Upgrade all dependencies
+	@echo "⬆️  Upgrading dependencies..."
+	@$(UV) sync --upgrade
+
+all: clean deps-check dev type-check test ## Run complete setup and validation
+	@echo "🎉 All tasks completed successfully!"
+
+info: ## Show project information
+	@echo "📋 Project Information"
+	@echo "======================"
+	@echo "Name: BearTrak Search API"
+	@echo "Description: FastAPI backend with HTMX integration"
+	@echo "Python: $(shell python --version 2>/dev/null || echo 'Not found')"
+	@echo "UV: $(shell $(UV) --version 2>/dev/null || echo 'Not found')"
+	@echo "Port: $(PORT)"
+	@echo ""
+	@echo "📁 Key Files:"
+	@echo "  - main.py (FastAPI application)"
+	@echo "  - tests/ (Unit and integration tests)"
+	@echo "  - pyproject.toml (Dependencies & config)"
+	@echo "  - Makefile (This file)"
+	@echo ""
+	@echo "🎯 Preferred Tools:"
+	@echo "  - Formatter: ruff (use 'make format')"
+	@echo "  - Linter: ruff (included in 'make lint')"
+	@echo "  - Type Checker: mypy"
+	@echo ""
+	@echo "🔧 Legacy Tools (still available):"
+	@echo "  - black (use 'make format-black')"
+	@echo "  - isort (use 'make format-isort')"
