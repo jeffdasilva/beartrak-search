@@ -1,5 +1,6 @@
-from typing import TypedDict
 import os
+from typing import TypedDict
+
 import uvicorn
 from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
