@@ -41,10 +41,49 @@ jobs:
     - name: Run unit tests
       run: uv run pytest tests/ -v --tb=short --ignore=tests/test_integration.py
 
+  makefile-test:
+    name: Test Makefile Targets
+    runs-on: ubuntu-latest
+    # This job validates that all our documented Makefile targets work correctly
+    # Ensures the developer workflow matches what CI expects
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v4
+    
+    - name: Set up Python 3.12
+      run: uv python install 3.12
+    
+    - name: Test utility targets
+      run: |
+        echo "Testing utility Makefile targets..."
+        make deps-check
+        make help
+        make info
+        make clean
+    
+    - name: Test setup targets
+      run: |
+        echo "Testing setup Makefile targets..."
+        make install
+        make dev
+    
+    - name: Test quality targets
+      run: |
+        echo "Testing quality assurance Makefile targets..."
+        make format-check
+        make lint
+        make test
+        make qa
+        make ci
+
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, makefile-test]
     
     steps:
     - name: Checkout code
@@ -70,6 +109,12 @@ jobs:
     
     - name: Run integration tests
       run: uv run python tests/test_integration.py
+    
+    - name: Test integration Makefile targets
+      run: |
+        # Test makefile targets that require a running server
+        make test-health
+        make test-integration
     
     - name: Stop the server
       run: |
