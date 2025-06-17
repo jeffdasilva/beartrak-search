@@ -15,7 +15,7 @@ help: ## Show this help message
 	@echo "  dev              Install all dependencies (including dev)"
 	@echo ""
 	@echo "Development:"
-	@echo "  start            Start the development server"
+	@echo "  start            Start the development server (requires: install)"
 	@echo "  server           Alias for start"
 	@echo ""
 	@echo "Code Quality:"
@@ -62,7 +62,7 @@ dev: ## Install all dependencies (including dev)
 	@echo "📦 Installing all dependencies with uv..."
 	@$(UV) sync
 
-start: dev ## Start the development server
+start: install ## Start the development server
 	@echo "🚀 Starting BearTrak Search API..."
 	@echo "📍 Server will be available at: http://localhost:$(PORT)"
 	@echo "📚 API documentation: http://localhost:$(PORT)/docs"
