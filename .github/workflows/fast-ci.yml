@@ -20,6 +20,7 @@ jobs:
       with:
         enable-cache: true
         cache-dependency-glob: "uv.lock"
+        cache-suffix: "fast-lint"
     
     - name: Set up Python 3.12
       run: uv python install 3.12
@@ -47,6 +48,7 @@ jobs:
       with:
         enable-cache: true
         cache-dependency-glob: "uv.lock"
+        cache-suffix: "fast-integration"
     
     - name: Set up Python 3.12
       run: uv python install 3.12
