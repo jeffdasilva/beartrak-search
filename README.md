@@ -201,6 +201,38 @@ Example production command:
 gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
 
+## CI/CD
+
+This project includes comprehensive GitHub Actions workflows for continuous integration:
+
+### Workflows
+
+- **Fast CI** (`fast-ci.yml`): Runs on all branch pushes
+  - Quality assurance (`make qa`)
+  - Code formatting checks
+  - Integration testing
+
+- **Full CI** (`ci.yml`): Comprehensive testing
+  - Matrix testing across Python 3.10-3.12
+  - Type checking, linting, formatting
+  - Unit and integration tests
+  - Security scanning
+
+- **Main Branch CI** (`main-ci.yml`): Enhanced checks for main branch
+  - Multi-version testing
+  - Coverage reporting
+  - Deployment readiness validation
+  - OpenAPI schema validation
+
+### Quality Checks
+
+All workflows include:
+- **Type Safety**: mypy with strict configuration
+- **Code Quality**: ruff linting and formatting
+- **Testing**: pytest with 46+ comprehensive tests
+- **Security**: safety and bandit scanning
+- **Integration**: Real HTTP API testing
+
 ## Dependencies
 
 - **FastAPI**: Web framework
