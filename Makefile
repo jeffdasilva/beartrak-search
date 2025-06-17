@@ -39,7 +39,8 @@ help: ## Show this help message
 	@echo "  ci               Run CI checks (for automation)"
 	@echo ""
 	@echo "Testing:"
-	@echo "  test             Run unit tests with pytest"
+	@echo "  test             Run unit tests with pytest (no server required)"
+	@echo "  test-all         Run all tests including integration (requires server)"
 	@echo "  test-legacy      Run the legacy API test script"
 	@echo "  test-integration Run integration tests (requires running server)"
 	@echo "  test-health      Quick health check test"
@@ -131,7 +132,7 @@ ci: format-check type-check ## Run CI checks (for automation)
 
 test: ## Run unit tests with pytest
 	@echo "🧪 Running unit tests with pytest..."
-	@$(UV) run pytest tests/ -v
+	@$(UV) run pytest tests/ -v --ignore=tests/test_integration.py
 
 test-legacy: ## Run the legacy API test script
 	@echo "🧪 Running legacy API test..."
@@ -140,6 +141,10 @@ test-legacy: ## Run the legacy API test script
 test-integration: ## Run integration tests (requires running server)
 	@echo "🧪 Running integration tests..."
 	@$(UV) run python tests/test_integration.py
+
+test-all: ## Run all tests including integration (requires running server)
+	@echo "🧪 Running all tests (unit + integration)..."
+	@$(UV) run pytest tests/ -v
 
 test-health: ## Quick health check test
 	@echo "🩺 Testing health endpoint..."

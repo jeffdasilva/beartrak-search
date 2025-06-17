@@ -86,11 +86,32 @@ uv sync --no-dev
 
 ### Run Tests
 ```bash
-# Run the API test script
-uv run python test_api.py
+# Run unit tests (no server required)
+make test
 
-# Run with pytest (when tests are added)
-uv run pytest
+# Run all tests including integration (requires running server)
+make test-all
+
+# Run integration tests only (requires running server)
+make test-integration
+
+# Run quality assurance (linting + unit tests)
+make qa
+```
+
+### Development Workflow
+```bash
+# 1. Install dependencies
+uv sync
+
+# 2. Run quality checks during development
+make qa
+
+# 3. Start server for integration testing (optional)
+make start
+
+# 4. In another terminal, run integration tests
+make test-integration
 ```
 
 ### Add New Dependencies

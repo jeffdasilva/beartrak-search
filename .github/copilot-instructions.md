@@ -45,9 +45,10 @@ This is a FastAPI backend project for the BearTrak Search frontend application. 
 
 ### Available Make Targets:
 - `make start` - Start the development server
-- `make test` - Run all unit tests with pytest
+- `make test` - Run unit tests only (no server required)
+- `make test-all` - Run all tests including integration (requires running server)
 - `make test-integration` - Run integration tests (requires running server)
 - `make lint` - Run type checking and linting
 - `make format` - Format code with ruff
-- `make qa` - Run complete quality checks (lint + test)
+- `make qa` - Run complete quality checks (lint + unit tests)
 - `make clean` - Clean up cache files
