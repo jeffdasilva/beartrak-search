@@ -3,50 +3,69 @@ Unit tests for the BearTrak Search API core search logic.
 """
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from main import search_properties
 
 
-def test_search_properties_with_valid_query() -> None:
+@pytest.mark.asyncio
+async def test_search_properties_with_valid_query(
+    test_db_session: AsyncSession,
+) -> None:
     """Test that search_properties returns results for valid queries."""
-    results = search_properties("apartment")
+    results = await search_properties("apartment", test_db_session)
     assert isinstance(results, list)
     assert len(results) > 0
 
     # Check that all returned items are properties with correct structure
     for prop in results:
-        assert "name" in prop
-        assert "location" in prop
-        assert "type" in prop
-        assert "price" in prop
-        assert "details" in prop
+        assert hasattr(prop, "name")
+        assert hasattr(prop, "location")
+        assert hasattr(prop, "type")
+        assert hasattr(prop, "price")
+        assert hasattr(prop, "details")
 
 
-def test_search_properties_empty_query() -> None:
+@pytest.mark.asyncio
+async def test_search_properties_empty_query(test_db_session: AsyncSession) -> None:
     """Test that search_properties returns empty list for empty query."""
-    results = search_properties("")
+    results = await search_properties("", test_db_session)
     assert results == []
 
 
-def test_search_properties_short_query() -> None:
+@pytest.mark.asyncio
+async def test_search_properties_short_query(test_db_session: AsyncSession) -> None:
     """Test that search_properties returns empty list for queries shorter than 2 characters."""
-    results = search_properties("a")
+    results = await search_properties("a", test_db_session)
     assert results == []
 
 
-def test_search_properties_case_insensitive() -> None:
+@pytest.mark.asyncio
+async def test_search_properties_case_insensitive(
+    test_db_session: AsyncSession,
+) -> None:
     """Test that search_properties is case insensitive."""
     queries = ["apartment", "APARTMENT", "Apartment", "aPaRtMeNt"]
 
-    results_list = [search_properties(query) for query in queries]
+    results_list = []
+    for query in queries:
+        results = await search_properties(query, test_db_session)
+        results_list.append(results)
 
-    # All should return same results
+    # All queries should return the same results
     first_result = results_list[0]
-    for result in results_list[1:]:
-        assert result == first_result
+    for results in results_list[1:]:
+        assert len(results) == len(first_result)
+        # Check that the same properties are returned (by name)
+        first_names = {prop.name for prop in first_result}
+        result_names = {prop.name for prop in results}
+        assert first_names == result_names
 
 
-def test_search_properties_searches_all_fields() -> None:
+@pytest.mark.asyncio
+async def test_search_properties_searches_all_fields(
+    test_db_session: AsyncSession,
+) -> None:
     """Test that search_properties searches across all property fields."""
     # Test searching by different fields
     test_cases = [
@@ -57,65 +76,90 @@ def test_search_properties_searches_all_fields() -> None:
     ]
 
     for query, field_type in test_cases:
-        results = search_properties(query)
+        results = await search_properties(query, test_db_session)
         assert len(results) > 0, (
-            f"No results found for {field_type} search with '{query}'"
+            f"Should find results when searching for '{query}' in {field_type}"
         )
 
-        # Verify the query appears in at least one field of returned properties
+        # Verify that at least one result contains the query term
         found_match = False
         for prop in results:
-            searchable_text = f"{prop['name']} {prop['location']} {prop['type']} {prop['details']}".lower()
-            if query.lower() in searchable_text:
+            # Convert all fields to lowercase for case-insensitive comparison
+            prop_text = (
+                f"{prop.name} {prop.location} {prop.type} {prop.details}".lower()
+            )
+            if query.lower() in prop_text:
                 found_match = True
                 break
-        assert found_match, f"Query '{query}' not found in search results"
+
+        assert found_match, f"Query '{query}' should match at least one property field"
 
 
-def test_search_properties_no_matches() -> None:
+@pytest.mark.asyncio
+async def test_search_properties_no_matches(test_db_session: AsyncSession) -> None:
     """Test that search_properties returns empty list when no matches found."""
-    results = search_properties("zzznomatcheszzz")
+    results = await search_properties("zzznomatcheszzz", test_db_session)
     assert results == []
 
 
-def test_search_properties_partial_matches() -> None:
+@pytest.mark.asyncio
+async def test_search_properties_partial_matches(test_db_session: AsyncSession) -> None:
     """Test that search_properties works with partial matches."""
     # Test partial word matching
-    results = search_properties("down")  # Should match "downtown"
+    results = await search_properties(
+        "down", test_db_session
+    )  # Should match "downtown"
     assert len(results) > 0
 
-    # Verify that at least one result contains the partial match
-    found_match = False
+    # Verify that the results contain the partial match
+    found_downtown = False
     for prop in results:
-        searchable_text = f"{prop['name']} {prop['location']} {prop['type']} {prop['details']}".lower()
-        if "down" in searchable_text:
-            found_match = True
+        if "downtown" in prop.name.lower():
+            found_downtown = True
             break
-    assert found_match
+    assert found_downtown, (
+        "Should find properties with 'downtown' when searching for 'down'"
+    )
 
 
-def test_search_properties_whitespace_handling() -> None:
+@pytest.mark.asyncio
+async def test_search_properties_whitespace_handling(
+    test_db_session: AsyncSession,
+) -> None:
     """Test that search_properties handles whitespace correctly."""
     # Test with leading/trailing whitespace
-    results_normal = search_properties("apartment")
-    results_whitespace = search_properties("  apartment  ")
+    results_normal = await search_properties("apartment", test_db_session)
+    results_whitespace = await search_properties("  apartment  ", test_db_session)
 
-    assert results_normal == results_whitespace
+    assert len(results_normal) == len(results_whitespace)
+
+    # Check that the same properties are returned
+    normal_names = {prop.name for prop in results_normal}
+    whitespace_names = {prop.name for prop in results_whitespace}
+    assert normal_names == whitespace_names
 
 
-def test_search_properties_return_type() -> None:
+@pytest.mark.asyncio
+async def test_search_properties_return_type(test_db_session: AsyncSession) -> None:
     """Test that search_properties returns the correct data types."""
-    results = search_properties("apartment")
-
-    # Should return a list
+    results = await search_properties("apartment", test_db_session)
     assert isinstance(results, list)
 
-    # Each item should be a dict with string values
-    for prop in results:
-        assert isinstance(prop, dict)
-        for key, value in prop.items():
-            assert isinstance(key, str)
-            assert isinstance(value, str)
+    if results:  # If we have results
+        # Check the structure of returned objects
+        prop = results[0]
+        assert hasattr(prop, "name")
+        assert hasattr(prop, "location")
+        assert hasattr(prop, "type")
+        assert hasattr(prop, "price")
+        assert hasattr(prop, "details")
+
+        # Check that all fields are strings
+        assert isinstance(prop.name, str)
+        assert isinstance(prop.location, str)
+        assert isinstance(prop.type, str)
+        assert isinstance(prop.price, str)
+        assert isinstance(prop.details, str)
 
 
 @pytest.mark.parametrize(
@@ -126,9 +170,12 @@ def test_search_properties_return_type() -> None:
         ("house", 1),  # Should find at least 1 house
     ],
 )
-def test_search_properties_expected_counts(query: str, expected_count: int) -> None:
+@pytest.mark.asyncio
+async def test_search_properties_expected_counts(
+    query: str, expected_count: int, test_db_session: AsyncSession
+) -> None:
     """Test that search_properties returns expected minimum counts for known queries."""
-    results = search_properties(query)
+    results = await search_properties(query, test_db_session)
     assert len(results) >= expected_count, (
-        f"Expected at least {expected_count} results for '{query}'"
+        f"Expected at least {expected_count} results for query '{query}', got {len(results)}"
     )

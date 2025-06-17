@@ -1,24 +1,37 @@
 import os
-from typing import TypedDict
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, Form
+from fastapi import Depends, FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database import (
+    PropertyModel,
+    get_async_session,
+    init_database,
+    populate_sample_data,
+    search_properties_db,
+)
+from models import HealthResponse, PropertyResponse
 
 
-# Define the structure for property data
-class Property(TypedDict):
-    name: str
-    location: str
-    type: str
-    price: str
-    details: str
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Application lifespan manager for startup and shutdown events."""
+    # Startup
+    await init_database()
+    await populate_sample_data()
+    yield
+    # Shutdown (if needed)
 
 
 app = FastAPI(
     title="BearTrak Search API",
-    description="Backend API for BearTrak Search frontend",
+    description="Backend API for BearTrak Search frontend with SQLite database",
+    lifespan=lifespan,
 )
 
 # Configure CORS to allow requests from your frontend
@@ -30,73 +43,43 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Sample data - replace with your actual data source
-SAMPLE_PROPERTIES: list[Property] = [
-    {
-        "name": "Modern Downtown Apartment",
-        "location": "Downtown Seattle",
-        "type": "Apartment",
-        "price": "$2,500/month",
-        "details": "2 bed, 2 bath, City views",
-    },
-    {
-        "name": "Cozy Suburban House",
-        "location": "Bellevue",
-        "type": "House",
-        "price": "$3,200/month",
-        "details": "3 bed, 2 bath, Garden",
-    },
-    {
-        "name": "Luxury Waterfront Condo",
-        "location": "Capitol Hill",
-        "type": "Condo",
-        "price": "$4,000/month",
-        "details": "2 bed, 2 bath, Water view",
-    },
-    {
-        "name": "Student-Friendly Studio",
-        "location": "University District",
-        "type": "Studio",
-        "price": "$1,200/month",
-        "details": "Studio, Near campus",
-    },
-    {
-        "name": "Family Townhouse",
-        "location": "Redmond",
-        "type": "Townhouse",
-        "price": "$2,800/month",
-        "details": "4 bed, 3 bath, Garage",
-    },
-]
+
+def convert_to_property_response(property_model: PropertyModel) -> PropertyResponse:
+    """Convert SQLAlchemy PropertyModel to Pydantic PropertyResponse."""
+    return PropertyResponse(
+        id=property_model.id,
+        name=property_model.name,
+        location=property_model.location,
+        type=property_model.type,
+        price=property_model.price,
+        details=property_model.details,
+    )
 
 
-def search_properties(query: str) -> list[Property]:
+async def search_properties(
+    query: str, session: AsyncSession
+) -> list[PropertyResponse]:
     """
-    Simple search function - replace with your actual search logic
+    Search function using async database operations.
 
     Args:
         query: The search query string
+        session: Async database session
 
     Returns:
-        List of properties matching the search query
+        List of PropertyResponse objects matching the search query
     """
     if not query or len(query.strip()) < 2:
         return []
 
-    query_lower: str = query.lower().strip()
-    results: list[Property] = []
+    # Use the database search function
+    property_models = await search_properties_db(query, session)
 
-    for prop in SAMPLE_PROPERTIES:
-        # Search in name, location, type, and details
-        searchable_text: str = f"{prop['name']} {prop['location']} {prop['type']} {prop['details']}".lower()
-
-        if query_lower in searchable_text:
-            results.append(prop)
-
-    return results
+    # Convert to Pydantic models for the API response
+    return [convert_to_property_response(prop) for prop in property_models]
 
 
-def generate_results_html(properties: list[Property], query: str) -> str:
+def generate_results_html(properties: list[PropertyResponse], query: str) -> str:
     """
     Generate HTML table for search results
 
@@ -129,11 +112,11 @@ def generate_results_html(properties: list[Property], query: str) -> str:
     for prop in properties:
         html += f"""
             <tr>
-                <td>{prop["name"]}</td>
-                <td>{prop["location"]}</td>
-                <td>{prop["type"]}</td>
-                <td>{prop["price"]}</td>
-                <td>{prop["details"]}</td>
+                <td>{prop.name}</td>
+                <td>{prop.location}</td>
+                <td>{prop.type}</td>
+                <td>{prop.price}</td>
+                <td>{prop.details}</td>
             </tr>
         """
 
@@ -148,7 +131,7 @@ def generate_results_html(properties: list[Property], query: str) -> str:
 @app.get("/")
 async def root() -> dict[str, str]:
     """
-    Health check endpoint
+    Basic health check endpoint
 
     Returns:
         Dictionary with status message
@@ -156,19 +139,54 @@ async def root() -> dict[str, str]:
     return {"message": "BearTrak Search API is running"}
 
 
-@app.post("/api/search", response_class=HTMLResponse)
-async def search(query: str = Form(...)) -> HTMLResponse:
+@app.get("/health", response_model=HealthResponse)
+async def health_check(
+    session: AsyncSession = Depends(get_async_session),
+) -> HealthResponse:
     """
-    Search endpoint that returns HTML for HTMX frontend
+    Detailed health check endpoint with database status.
+
+    Args:
+        session: Async database session (dependency injection)
+
+    Returns:
+        HealthResponse with service and database status
+    """
+    # Test database connection
+    try:
+        # Simple query to test database connectivity
+        from sqlalchemy import text
+
+        await session.execute(text("SELECT 1"))
+        database_status = "healthy"
+    except Exception:
+        database_status = "error"
+
+    return HealthResponse(
+        status="healthy",
+        service="BearTrak Search API",
+        database_status=database_status,
+    )
+
+
+@app.post("/api/search", response_class=HTMLResponse)
+async def search(
+    query: str = Form(...),
+    session: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """
+    Search endpoint that returns HTML for HTMX frontend.
+    Now uses async database operations.
 
     Args:
         query: The search query from the form
+        session: Async database session (dependency injection)
 
     Returns:
         HTML response containing search results
     """
-    # Perform search
-    results: list[Property] = search_properties(query)
+    # Perform search using async database operations
+    results: list[PropertyResponse] = await search_properties(query, session)
 
     # Generate HTML response
     html_response: str = generate_results_html(results, query)
@@ -176,15 +194,34 @@ async def search(query: str = Form(...)) -> HTMLResponse:
     return HTMLResponse(content=html_response)
 
 
-@app.get("/health")
-async def health_check() -> dict[str, str]:
+@app.get("/health", response_model=HealthResponse)
+async def health_check_db(
+    session: AsyncSession = Depends(get_async_session),
+) -> HealthResponse:
     """
-    Health check endpoint
+    Health check endpoint with database status.
+
+    Args:
+        session: Async database session (dependency injection)
 
     Returns:
-        Dictionary with health status information
+        HealthResponse with service and database status
     """
-    return {"status": "healthy", "service": "BearTrak Search API"}
+    # Test database connection
+    try:
+        # Simple query to test database connectivity
+        from sqlalchemy import text
+
+        await session.execute(text("SELECT 1"))
+        database_status = "healthy"
+    except Exception:
+        database_status = "error"
+
+    return HealthResponse(
+        status="healthy",
+        service="BearTrak Search API",
+        database_status=database_status,
+    )
 
 
 def main() -> None:

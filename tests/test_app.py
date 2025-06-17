@@ -21,7 +21,10 @@ def test_app_title() -> None:
 
 def test_app_description() -> None:
     """Test that app has the correct description."""
-    assert app.description == "Backend API for BearTrak Search frontend"
+    assert (
+        app.description
+        == "Backend API for BearTrak Search frontend with SQLite database"
+    )
 
 
 def test_app_has_cors_middleware() -> None:
@@ -98,7 +101,10 @@ def test_openapi_schema_generation() -> None:
 
     # Check info section
     assert schema["info"]["title"] == "BearTrak Search API"
-    assert schema["info"]["description"] == "Backend API for BearTrak Search frontend"
+    assert (
+        schema["info"]["description"]
+        == "Backend API for BearTrak Search frontend with SQLite database"
+    )
 
 
 def test_app_startup() -> None:
