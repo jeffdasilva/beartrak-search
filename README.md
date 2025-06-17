@@ -33,15 +33,29 @@ pip install uv
 
 ```
 beartrak-search/
-├── main.py              # Main FastAPI application
-├── pyproject.toml       # Project configuration and dependencies
-├── requirements.txt     # Legacy requirements (optional)
-├── .env                # Environment configuration
-├── start.sh            # Startup script
-├── test_api.py         # API test script
-├── README.md           # This file
+├── main.py                    # Main FastAPI application
+├── Makefile                   # Development workflow commands
+├── pyproject.toml            # Project configuration and dependencies
+├── uv.lock                   # Dependency lock file
+├── .env                      # Environment configuration (PORT=8000)
+├── .gitignore               # Git ignore patterns
+├── mypy.ini                 # Type checking configuration
+├── README.md                # This file
+├── tests/                   # Test suite
+│   ├── __init__.py
+│   ├── conftest.py          # Test fixtures and configuration
+│   ├── test_app.py          # FastAPI application tests
+│   ├── test_health.py       # Health endpoint tests
+│   ├── test_search.py       # Search endpoint tests
+│   ├── test_search_logic.py # Search logic unit tests
+│   ├── test_integration.py  # Integration tests
+│   └── test_api_legacy.py   # Legacy API tests
 └── .github/
-    └── copilot-instructions.md
+    ├── copilot-instructions.md # Development guidelines
+    └── workflows/             # CI/CD workflows
+        ├── ci.yml            # Comprehensive CI pipeline
+        ├── fast-ci.yml       # Fast quality checks
+        └── main-ci.yml       # Main branch validations
 ```
 
 ## Quick Start
@@ -51,21 +65,21 @@ beartrak-search/
    cd beartrak-search
    ```
 
-2. **Install Dependencies with uv**:
+2. **Install Dependencies**:
    ```bash
-   uv sync
+   # Install all dependencies (including development tools)
+   make dev
+   
+   # Or install only production dependencies
+   make install
    ```
 
 3. **Run the Server**:
    ```bash
-   # Using the startup script (recommended)
-   ./start.sh
+   # Start the development server (recommended)
+   make start
    
-   # Or directly with uv
-   uv run python main.py
-   
-   # Or using the project script
-   uv run beartrak-search
+   # The server will be available at http://localhost:8000
    ```
 
 4. **Access the API**:
@@ -75,66 +89,86 @@ beartrak-search/
 
 > **Port Configuration**: The server port is configured in the `.env` file (`PORT=8000`). You can override this by setting the `PORT` environment variable.
 
-## Development Commands
+## Development Workflow
 
-### Install Dependencies
+### Quick Setup
 ```bash
-# Install all dependencies including dev dependencies
-uv sync
+# 1. Install dependencies and development tools
+make dev
 
-# Install only production dependencies
-uv sync --no-dev
+# 2. Run quality checks to ensure everything is working
+make qa
+
+# 3. Start the development server
+make start
 ```
 
-### Run Tests
+### Available Make Targets
+
+**Setup and Installation:**
+- `make install` - Install production dependencies only
+- `make dev` - Install all dependencies including development tools
+
+**Development:**
+- `make start` - Start the development server with auto-reload
+- `make server` - Alias for start
+
+**Code Quality:**
+- `make qa` - Run all quality checks (linting + unit tests)
+- `make lint` - Run all linting and formatting checks  
+- `make format` - Format code with ruff
+- `make format-check` - Check if code is properly formatted
+- `make type-check` - Run type checking with mypy
+
+**Testing:**
+- `make test` - Run unit tests (no server required)
+- `make test-all` - Run all tests including integration (requires server)
+- `make test-integration` - Run integration tests (requires running server)
+- `make test-health` - Quick health check test
+
+**Utilities:**
+- `make clean` - Clean up cache files and temporary directories
+- `make info` - Show project information
+- `make help` - Display all available targets
+- `make deps-check` - Verify uv is installed
+- `make upgrade` - Upgrade all dependencies
+
+### Development Commands
+
+#### Daily Development
 ```bash
-# Run unit tests (no server required)
+# Check code quality before committing
+make qa
+
+# Format your code
+make format
+
+# Run only unit tests (fast)
 make test
-
-# Run all tests including integration (requires running server)
-make test-all
-
-# Run integration tests only (requires running server)
-make test-integration
-
-# Run quality assurance (linting + unit tests)
-make qa
 ```
 
-### Development Workflow
+#### Integration Testing
 ```bash
-# 1. Install dependencies
-uv sync
-
-# 2. Run quality checks during development
-make qa
-
-# 3. Start server for integration testing (optional)
+# Terminal 1: Start the server
 make start
 
-# 4. In another terminal, run integration tests
+# Terminal 2: Run integration tests
 make test-integration
+
+# Or run all tests (unit + integration)
+make test-all
 ```
 
-### Add New Dependencies
+#### Project Maintenance
 ```bash
-# Add a production dependency
-uv add package-name
+# Get project information
+make info
 
-# Add a development dependency
-uv add --dev package-name
+# Clean up cache files
+make clean
 
-# Add a specific version
-uv add "package-name>=1.0.0"
-```
-
-### Update Dependencies
-```bash
-# Update all dependencies
-uv sync --upgrade
-
-# Update specific package
-uv add package-name --upgrade
+# Upgrade dependencies
+make upgrade
 ```
 
 ## API Endpoints
@@ -183,19 +217,64 @@ Example HTMX configuration:
 
 ## Development
 
-### Running in Development Mode
+### Daily Development Workflow
 
-The application includes auto-reload for development:
+1. **Start your development session**:
+   ```bash
+   make dev    # Ensure all dependencies are installed
+   make qa     # Verify code quality
+   ```
+
+2. **During development**:
+   ```bash
+   make format     # Format your code
+   make test      # Run unit tests quickly
+   make qa        # Full quality check before commits
+   ```
+
+3. **Testing with integration**:
+   ```bash
+   # Terminal 1
+   make start
+   
+   # Terminal 2  
+   make test-integration
+   ```
+
+### Adding New Dependencies
+
+Use `uv` commands to manage dependencies:
 
 ```bash
-python main.py
+# Add a production dependency
+uv add package-name
+
+# Add a development dependency  
+uv add --dev package-name
+
+# Add a specific version
+uv add "package-name>=1.0.0"
+
+# Update dependencies
+make upgrade
+```
+
+### Running in Development Mode
+
+The development server includes auto-reload:
+
+```bash
+make start
+# Server automatically restarts when you modify files
 ```
 
 ### Adding New Features
 
 1. **Modify Search Logic**: Update the `search_properties()` function in `main.py`
-2. **Add New Endpoints**: Create new route handlers in `main.py`
+2. **Add New Endpoints**: Create new route handlers in `main.py`  
 3. **Update HTML Templates**: Modify the `generate_results_html()` function
+4. **Test Your Changes**: Run `make qa` to ensure quality
+5. **Integration Test**: Use `make test-integration` with a running server
 
 ### Sample Data
 
@@ -226,35 +305,51 @@ gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 
 ## CI/CD
 
-This project includes comprehensive GitHub Actions workflows for continuous integration:
+This project includes comprehensive GitHub Actions workflows for continuous integration that validate both direct commands and Makefile targets.
 
 ### Workflows
 
 - **Fast CI** (`fast-ci.yml`): Runs on all branch pushes
-  - Quality assurance (`make qa`)
-  - Code formatting checks
-  - Integration testing
+  - Uses `make qa` for quality assurance
+  - Uses `make format-check` for code formatting validation
+  - Integration testing with server setup
 
-- **Full CI** (`ci.yml`): Comprehensive testing
+- **Full CI** (`ci.yml`): Comprehensive testing pipeline
   - Matrix testing across Python 3.10-3.12
-  - Type checking, linting, formatting
-  - Unit and integration tests
+  - Validates all Makefile targets (`make help`, `make qa`, `make test`, etc.)
+  - Integration tests using `make test-integration`
   - Security scanning
 
 - **Main Branch CI** (`main-ci.yml`): Enhanced checks for main branch
-  - Multi-version testing
+  - Multi-version testing with `make all`
   - Coverage reporting
   - Deployment readiness validation
-  - OpenAPI schema validation
 
 ### Quality Checks
 
-All workflows include:
-- **Type Safety**: mypy with strict configuration
-- **Code Quality**: ruff linting and formatting
-- **Testing**: pytest with 46+ comprehensive tests
-- **Security**: safety and bandit scanning
-- **Integration**: Real HTTP API testing
+All workflows use Makefile targets for consistency:
+- **Type Safety**: `make type-check` (mypy with strict configuration)
+- **Code Quality**: `make lint` (ruff linting and formatting)
+- **Testing**: `make test` (pytest with 45+ comprehensive tests)
+- **Integration**: `make test-integration` (Real HTTP API testing)
+- **Complete QA**: `make qa` (combines linting + testing)
+
+### Local Development vs CI
+
+The CI workflows validate that the developer experience (Makefile targets) works correctly:
+
+```bash
+# What developers run locally:
+make qa
+
+# What CI validates:
+make qa
+make test-integration  # (with server running)
+make format-check
+# ... and many other Makefile targets
+```
+
+This ensures that local development commands match exactly what CI expects, preventing "works on my machine" issues.
 
 ## Dependencies
 
