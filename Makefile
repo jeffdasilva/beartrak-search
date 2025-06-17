@@ -148,7 +148,7 @@ test-all: ## Run all tests including integration (requires running server)
 
 test-health: ## Quick health check test
 	@echo "🩺 Testing health endpoint..."
-	@curl -s http://localhost:$(PORT)/health | python -m json.tool || echo "❌ Server not running on port $(PORT)"
+	@curl -s http://localhost:$(PORT)/health | $(UV) run python -m json.tool || echo "❌ Server not running on port $(PORT)"
 
 clean: ## Clean up cache files and temporary directories
 	@echo "🧹 Cleaning up..."
@@ -173,7 +173,7 @@ info: ## Show project information
 	@echo "======================"
 	@echo "Name: BearTrak Search API"
 	@echo "Description: FastAPI backend with HTMX integration"
-	@echo "Python: $(shell python --version 2>/dev/null || echo 'Not found')"
+	@echo "Python: $(shell $(UV) run python --version 2>/dev/null || echo 'Not found')"
 	@echo "UV: $(shell $(UV) --version 2>/dev/null || echo 'Not found')"
 	@echo "Port: $(PORT)"
 	@echo ""
