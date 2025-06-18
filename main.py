@@ -3,19 +3,24 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import Depends, FastAPI, Form
+from fastapi import Depends, FastAPI, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import (
     RequestForProposalModel,
+    create_rfp_db,
+    delete_rfp_db,
+    get_all_rfps_db,
     get_async_session,
+    get_rfp_by_id_db,
     init_database,
     populate_sample_data,
     search_rfps_db,
+    update_rfp_db,
 )
-from models import HealthResponse, RFPResponse
+from models import HealthResponse, RFPCreate, RFPResponse, RFPUpdate
 
 
 @asynccontextmanager
@@ -39,7 +44,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, replace with your specific domain
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
     allow_headers=["*"],
 )
 
@@ -50,6 +55,8 @@ def convert_to_rfp_response(rfp_model: RequestForProposalModel) -> RFPResponse:
         id=rfp_model.id,
         name=rfp_model.name,
         url=rfp_model.url,
+        description=rfp_model.description,
+        updated_at=rfp_model.updated_at,
     )
 
 
@@ -188,34 +195,124 @@ async def search(
     return HTMLResponse(content=html_response)
 
 
-@app.get("/health", response_model=HealthResponse)
-async def health_check_db(
+# REST API CRUD Endpoints
+
+
+@app.get("/api/rfps", response_model=list[RFPResponse])
+async def get_all_rfps(
     session: AsyncSession = Depends(get_async_session),
-) -> HealthResponse:
+) -> list[RFPResponse]:
     """
-    Health check endpoint with database status.
+    Get all RFPs from the database.
 
     Args:
         session: Async database session (dependency injection)
 
     Returns:
-        HealthResponse with service and database status
+        List of all RFPs
     """
-    # Test database connection
-    try:
-        # Simple query to test database connectivity
-        from sqlalchemy import text
+    rfp_models = await get_all_rfps_db(session)
+    return [convert_to_rfp_response(rfp) for rfp in rfp_models]
 
-        await session.execute(text("SELECT 1"))
-        database_status = "healthy"
-    except Exception:
-        database_status = "error"
 
-    return HealthResponse(
-        status="healthy",
-        service="BearTrak Search API",
-        database_status=database_status,
+@app.get("/api/rfps/{rfp_id}", response_model=RFPResponse)
+async def get_rfp_by_id(
+    rfp_id: int,
+    session: AsyncSession = Depends(get_async_session),
+) -> RFPResponse:
+    """
+    Get a single RFP by ID.
+
+    Args:
+        rfp_id: The ID of the RFP to retrieve
+        session: Async database session (dependency injection)
+
+    Returns:
+        The requested RFP
+
+    Raises:
+        HTTPException: If RFP is not found
+    """
+    rfp_model = await get_rfp_by_id_db(session, rfp_id)
+    if rfp_model is None:
+        raise HTTPException(status_code=404, detail="RFP not found")
+    return convert_to_rfp_response(rfp_model)
+
+
+@app.post("/api/rfps", response_model=RFPResponse, status_code=201)
+async def create_rfp(
+    rfp_data: RFPCreate,
+    session: AsyncSession = Depends(get_async_session),
+) -> RFPResponse:
+    """
+    Create a new RFP.
+
+    Args:
+        rfp_data: The RFP data to create
+        session: Async database session (dependency injection)
+
+    Returns:
+        The created RFP
+    """
+    rfp_model = await create_rfp_db(
+        session,
+        name=rfp_data.name,
+        url=rfp_data.url,
+        description=rfp_data.description,
     )
+    return convert_to_rfp_response(rfp_model)
+
+
+@app.put("/api/rfps/{rfp_id}", response_model=RFPResponse)
+async def update_rfp(
+    rfp_id: int,
+    rfp_data: RFPUpdate,
+    session: AsyncSession = Depends(get_async_session),
+) -> RFPResponse:
+    """
+    Update an existing RFP.
+
+    Args:
+        rfp_id: The ID of the RFP to update
+        rfp_data: The RFP data to update
+        session: Async database session (dependency injection)
+
+    Returns:
+        The updated RFP
+
+    Raises:
+        HTTPException: If RFP is not found
+    """
+    rfp_model = await update_rfp_db(
+        session,
+        rfp_id,
+        name=rfp_data.name,
+        url=rfp_data.url,
+        description=rfp_data.description,
+    )
+    if rfp_model is None:
+        raise HTTPException(status_code=404, detail="RFP not found")
+    return convert_to_rfp_response(rfp_model)
+
+
+@app.delete("/api/rfps/{rfp_id}", status_code=204)
+async def delete_rfp(
+    rfp_id: int,
+    session: AsyncSession = Depends(get_async_session),
+) -> None:
+    """
+    Delete an RFP.
+
+    Args:
+        rfp_id: The ID of the RFP to delete
+        session: Async database session (dependency injection)
+
+    Raises:
+        HTTPException: If RFP is not found
+    """
+    success = await delete_rfp_db(session, rfp_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="RFP not found")
 
 
 def main() -> None:

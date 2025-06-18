@@ -6,10 +6,12 @@ Uses async SQLAlchemy with aiosqlite for modern async database operations.
 import os
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
+from datetime import datetime
 
-from sqlalchemy import String, Text, select
+from sqlalchemy import DateTime, String, Text, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.sql import func
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./beartrak_search.db")
@@ -45,9 +47,12 @@ class RequestForProposalModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=func.now(), onupdate=func.now()
+    )
 
     def __repr__(self) -> str:
-        return f"RequestForProposalModel(id={self.id}, name='{self.name}', url='{self.url}')"
+        return f"RequestForProposalModel(id={self.id}, name='{self.name}', url='{self.url}', updated_at='{self.updated_at}')"
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
@@ -164,3 +169,106 @@ async def get_all_rfps_db(session: AsyncSession) -> list[RequestForProposalModel
     stmt = select(RequestForProposalModel).order_by(RequestForProposalModel.name)
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def get_rfp_by_id_db(
+    session: AsyncSession, rfp_id: int
+) -> RequestForProposalModel | None:
+    """
+    Get a single RFP by ID from the database.
+
+    Args:
+        session: Async database session
+        rfp_id: The ID of the RFP to retrieve
+
+    Returns:
+        RequestForProposalModel instance or None if not found
+    """
+    stmt = select(RequestForProposalModel).where(RequestForProposalModel.id == rfp_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def create_rfp_db(
+    session: AsyncSession,
+    name: str,
+    url: str | None = None,
+    description: str | None = None,
+) -> RequestForProposalModel:
+    """
+    Create a new RFP in the database.
+
+    Args:
+        session: Async database session
+        name: The name of the RFP
+        url: Optional URL for the RFP
+        description: Optional description for the RFP
+
+    Returns:
+        The created RequestForProposalModel instance
+    """
+    rfp = RequestForProposalModel(
+        name=name,
+        url=url,
+        description=description,
+    )
+    session.add(rfp)
+    await session.commit()
+    await session.refresh(rfp)
+    return rfp
+
+
+async def update_rfp_db(
+    session: AsyncSession,
+    rfp_id: int,
+    name: str | None = None,
+    url: str | None = None,
+    description: str | None = None,
+) -> RequestForProposalModel | None:
+    """
+    Update an existing RFP in the database.
+
+    Args:
+        session: Async database session
+        rfp_id: The ID of the RFP to update
+        name: Optional new name for the RFP
+        url: Optional new URL for the RFP
+        description: Optional new description for the RFP
+
+    Returns:
+        The updated RequestForProposalModel instance or None if not found
+    """
+    rfp = await get_rfp_by_id_db(session, rfp_id)
+    if rfp is None:
+        return None
+
+    if name is not None:
+        rfp.name = name
+    if url is not None:
+        rfp.url = url
+    if description is not None:
+        rfp.description = description
+
+    await session.commit()
+    await session.refresh(rfp)
+    return rfp
+
+
+async def delete_rfp_db(session: AsyncSession, rfp_id: int) -> bool:
+    """
+    Delete an RFP from the database.
+
+    Args:
+        session: Async database session
+        rfp_id: The ID of the RFP to delete
+
+    Returns:
+        True if the RFP was deleted, False if not found
+    """
+    rfp = await get_rfp_by_id_db(session, rfp_id)
+    if rfp is None:
+        return False
+
+    await session.delete(rfp)
+    await session.commit()
+    return True

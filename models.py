@@ -3,6 +3,8 @@ Pydantic models for FastAPI request/response serialization.
 These models handle data validation and serialization for the API layer.
 """
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -10,7 +12,6 @@ class RFPResponse(BaseModel):
     """
     Pydantic model for RFP responses in the FastAPI layer.
     This handles serialization from SQLAlchemy models to JSON/dict.
-    Note: description field is excluded from API responses as it's only used for search.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -18,6 +19,8 @@ class RFPResponse(BaseModel):
     id: int
     name: str = Field(..., description="RFP name")
     url: str | None = Field(None, description="Optional URL for more information")
+    description: str | None = Field(None, description="RFP description")
+    updated_at: datetime = Field(..., description="When the RFP was last updated")
 
 
 class RFPCreate(BaseModel):
@@ -27,6 +30,19 @@ class RFPCreate(BaseModel):
     """
 
     name: str = Field(..., min_length=1, max_length=255, description="RFP name")
+    url: str | None = Field(None, max_length=2048, description="Optional URL")
+    description: str | None = Field(
+        None, description="Optional RFP description for search purposes"
+    )
+
+
+class RFPUpdate(BaseModel):
+    """
+    Pydantic model for updating existing RFPs.
+    Used for PUT/PATCH requests to update RFPs.
+    """
+
+    name: str | None = Field(None, min_length=1, max_length=255, description="RFP name")
     url: str | None = Field(None, max_length=2048, description="Optional URL")
     description: str | None = Field(
         None, description="Optional RFP description for search purposes"
