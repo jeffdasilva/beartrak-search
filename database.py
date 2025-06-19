@@ -14,7 +14,30 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./beartrak_search.db")
+def get_database_url() -> str:
+    """
+    Get the database URL based on environment configuration.
+    
+    In production mode (ENVIRONMENT=production), uses beartrak.db
+    In development/test mode (default), uses beartrak_test.db
+    
+    Can be overridden with DATABASE_URL environment variable.
+    """
+    # Check if DATABASE_URL is explicitly set
+    if database_url := os.getenv("DATABASE_URL"):
+        return database_url
+    
+    # Determine database file based on environment
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    
+    if environment == "production":
+        db_file = os.getenv("PRODUCTION_DB", "beartrak.db")
+    else:  # development, test, or any other value
+        db_file = os.getenv("DEVELOPMENT_DB", "beartrak_test.db")
+    
+    return f"sqlite+aiosqlite:///./{db_file}"
+
+DATABASE_URL = get_database_url()
 
 # Create async engine
 engine = create_async_engine(

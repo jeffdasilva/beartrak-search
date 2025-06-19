@@ -3,6 +3,7 @@ Integration tests for the BearTrak Search API.
 Tests the full application flow and real HTTP requests.
 """
 
+import os
 import time
 
 import requests
@@ -24,10 +25,13 @@ def wait_for_server(base_url: str, timeout: int = 30) -> bool:
 
 def test_api_integration() -> None:
     """Integration test for the BearTrak Search API."""
-    base_url = "http://localhost:8000"  # Updated to match .env PORT
+    # Use environment variable for port, default to development port
+    port = os.getenv("TEST_SERVER_PORT", "8001")  # Default to dev server port
+    base_url = f"http://localhost:{port}"
 
     # Note: This test requires the server to be running
-    # Run with: make start (in background) && make test-integration
+    # Run with: make start-dev (in background) && make test-integration
+    # Or: TEST_SERVER_PORT=8000 make test-integration (for production server)
 
     try:
         # Test health endpoint
@@ -65,9 +69,12 @@ def test_api_integration() -> None:
 
     except requests.exceptions.ConnectionError:
         print(
-            "❌ Could not connect to API. Make sure the server is running on localhost:8000"
+            f"❌ Could not connect to API. Make sure the server is running on localhost:{port}"
         )
-        print("   Run: make start (in another terminal)")
+        print("   Run: make start-dev (in another terminal)")
+        print(
+            "   Or: TEST_SERVER_PORT=8000 make test-integration (for production server)"
+        )
         raise
     except Exception as e:
         print(f"❌ Integration test failed: {e}")

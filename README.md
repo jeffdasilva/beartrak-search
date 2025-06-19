@@ -8,8 +8,57 @@ A FastAPI backend for the BearTrak RFP Search application that provides search f
 - **HTMX Integration**: Returns HTML responses for seamless frontend integration
 - **CORS Support**: Configured for cross-origin requests
 - **Real-time Search**: Supports live search as users type
+- **Multi-Environment Database**: Separate databases for development, testing, and production
 - **Sample Data**: Includes sample RFP data for testing
 - **uv Package Management**: Modern Python package and project management
+
+## Database Configuration
+
+The application uses SQLite databases with different files for each environment:
+
+- **Production**: `beartrak.db` - Clean database for production use  
+- **Development/Testing**: `beartrak_test.db` - Shared database for development and testing
+
+The database selection is controlled by the `ENVIRONMENT` variable in `.env`:
+
+```env
+ENVIRONMENT=development  # Options: development, production 
+PRODUCTION_DB=beartrak.db
+DEVELOPMENT_DB=beartrak_test.db
+```
+
+**Note**: Both development and testing use the same database file (`beartrak_test.db`). Tests automatically recreate tables with fresh sample data, so there's no interference between development work and test runs.
+
+## Port Configuration
+
+The application uses different default ports for each environment to avoid conflicts:
+
+- **Production**: Port `8000` (default)
+- **Development**: Port `8001` (default)
+
+### Port Override Options:
+
+1. **Environment Variables** (recommended):
+   ```bash
+   PRODUCTION_PORT=9000 make start      # Production on port 9000
+   DEVELOPMENT_PORT=9001 make start-dev # Development on port 9001
+   ```
+
+2. **In `.env` file**:
+   ```env
+   PRODUCTION_PORT=9000
+   DEVELOPMENT_PORT=9001
+   ```
+
+3. **Legacy PORT variable** (affects current environment):
+   ```env
+   PORT=9000  # Overrides the default for current ENVIRONMENT
+   ```
+
+You can also override the database URL directly:
+```env
+DATABASE_URL=sqlite+aiosqlite:///./custom.db
+```
 
 ## Prerequisites
 
@@ -76,18 +125,23 @@ beartrak-search/
 
 3. **Run the Server**:
    ```bash
-   # Start the development server (recommended)
+   # Start the production server (port 8000)
    make start
    
-   # The server will be available at http://localhost:8000
+   # Start the development server (port 8001) - recommended for development
+   make start-dev
+   
+   # Production server: http://localhost:8000
+   # Development server: http://localhost:8001
    ```
 
 4. **Access the API**:
-   - API will be available at: `http://localhost:8000` (configured in `.env`)
-   - Interactive docs: `http://localhost:8000/docs`
-   - Health check: `http://localhost:8000/health`
+   - **Production**: `http://localhost:8000` (clean database)
+   - **Development**: `http://localhost:8001` (with sample data)
+   - Interactive docs: `http://localhost:XXXX/docs` (replace XXXX with port)
+   - Health check: `http://localhost:XXXX/health`
 
-> **Port Configuration**: The server port is configured in the `.env` file (`PORT=8000`). You can override this by setting the `PORT` environment variable.
+> **Port Configuration**: Default ports are 8000 (production) and 8001 (development). You can override these by setting `PRODUCTION_PORT` and `DEVELOPMENT_PORT` environment variables, or use the `PORT` variable in `.env` for the current environment.
 
 ## Development Workflow
 
@@ -100,7 +154,7 @@ make dev
 make qa
 
 # 3. Start the development server
-make start
+make start-dev
 ```
 
 ### Available Make Targets
@@ -110,8 +164,9 @@ make start
 - `make dev` - Install all dependencies including development tools
 
 **Development:**
-- `make start` - Start the development server with auto-reload
-- `make server` - Alias for start
+- `make start` - Start the production server with auto-reload
+- `make start-dev` - Start the development server with auto-reload (recommended for development)
+- `make server` - Alias for start-dev (backward compatibility)
 
 **Code Quality:**
 - `make qa` - Run all quality checks (linting + unit tests)
@@ -122,9 +177,10 @@ make start
 
 **Testing:**
 - `make test` - Run unit tests (no server required)
-- `make test-all` - Run all tests including integration (requires server)
-- `make test-integration` - Run integration tests (requires running server)
-- `make test-health` - Quick health check test
+- `make test-all` - Run all tests including integration (requires development server)
+- `make test-integration` - Run integration tests (requires development server)
+- `make test-health` - Quick health check test (development server)
+- `make test-health-prod` - Quick health check test (production server)
 
 **Utilities:**
 - `make clean` - Clean up cache files and temporary directories
@@ -149,14 +205,18 @@ make test
 
 #### Integration Testing
 ```bash
-# Terminal 1: Start the server
-make start
+# Terminal 1: Start the development server (recommended)
+make start-dev
 
 # Terminal 2: Run integration tests
 make test-integration
 
-# Or run all tests (unit + integration)
+# Or run all tests (unit + integration) 
 make test-all
+
+# To test against production server instead:
+# Terminal 1: make start
+# Terminal 2: TEST_SERVER_PORT=8000 make test-integration
 ```
 
 #### Project Maintenance

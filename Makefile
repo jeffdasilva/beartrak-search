@@ -3,7 +3,9 @@
 # Variables
 PYTHON_FILES := main.py tests/
 UV := uv
-PORT := 8000
+# Port configuration - can be overridden via environment variables
+PRODUCTION_PORT := $(shell echo $${PRODUCTION_PORT:-8000})
+DEVELOPMENT_PORT := $(shell echo $${DEVELOPMENT_PORT:-8001})
 
 .PHONY: help
 help: ## Show this help message
@@ -15,8 +17,9 @@ help: ## Show this help message
 	@echo "  dev              Install all dependencies (including dev)"
 	@echo ""
 	@echo "Development:"
-	@echo "  start            Start the development server (requires: install)"
-	@echo "  server           Alias for start"
+	@echo "  start            Start the production server (requires: install)"
+	@echo "  start-dev        Start the development server (requires: install)"
+	@echo "  server           Alias for start-dev (backward compatibility)"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  type-check       Run type checking with mypy"
@@ -43,7 +46,8 @@ help: ## Show this help message
 	@echo "  test-all         Run all tests including integration (requires server)"
 	@echo "  test-legacy      Run the legacy API test script"
 	@echo "  test-integration Run integration tests (requires running server)"
-	@echo "  test-health      Quick health check test"
+	@echo "  test-health      Quick health check test (development server)"
+	@echo "  test-health-prod Quick health check test (production server)"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  clean            Clean up cache files and temporary directories"
@@ -65,17 +69,29 @@ dev: ## Install all dependencies (including dev)
 	@$(UV) sync
 
 .PHONY: start
-start: install ## Start the development server
-	@echo "🚀 Starting BearTrak Search API..."
-	@echo "📍 Server will be available at: http://localhost:$(PORT)"
-	@echo "📚 API documentation: http://localhost:$(PORT)/docs"
-	@echo "❤️  Health check: http://localhost:$(PORT)/health"
+start: install ## Start the production server
+	@echo "🚀 Starting BearTrak Search API (Production Mode)..."
+	@echo "📍 Server will be available at: http://localhost:$(PRODUCTION_PORT)"
+	@echo "📚 API documentation: http://localhost:$(PRODUCTION_PORT)/docs"
+	@echo "❤️  Health check: http://localhost:$(PRODUCTION_PORT)/health"
+	@echo "🗄️  Using production database: beartrak.db"
 	@echo ""
 	@echo "🔄 Starting server..."
-	@$(UV) run uvicorn main:app --host 0.0.0.0 --port $(PORT) --reload
+	@ENVIRONMENT=production $(UV) run uvicorn main:app --host 0.0.0.0 --port $(PRODUCTION_PORT) --reload
+
+.PHONY: start-dev
+start-dev: install ## Start the development server
+	@echo "🚀 Starting BearTrak Search API (Development Mode)..."
+	@echo "📍 Server will be available at: http://localhost:$(DEVELOPMENT_PORT)"
+	@echo "📚 API documentation: http://localhost:$(DEVELOPMENT_PORT)/docs"
+	@echo "❤️  Health check: http://localhost:$(DEVELOPMENT_PORT)/health"
+	@echo "🗄️  Using development database: beartrak_test.db"
+	@echo ""
+	@echo "🔄 Starting server..."
+	@ENVIRONMENT=development $(UV) run uvicorn main:app --host 0.0.0.0 --port $(DEVELOPMENT_PORT) --reload
 
 .PHONY: server
-server: start ## Alias for start
+server: start-dev ## Alias for start-dev (backward compatibility)
 
 .PHONY: check
 check: lint ## Run all checks (linting + type checking)
@@ -166,17 +182,26 @@ test-legacy: ## Run the manual API test script
 .PHONY: test-integration
 test-integration: ## Run integration tests (requires running server)
 	@echo "🧪 Running integration tests..."
-	@$(UV) run python tests/test_integration.py
+	@echo "💡 Assuming development server on port $(DEVELOPMENT_PORT)"
+	@echo "   To test production server: TEST_SERVER_PORT=8000 make test-integration"
+	@TEST_SERVER_PORT=$(DEVELOPMENT_PORT) $(UV) run python tests/test_integration.py
 
 .PHONY: test-all
 test-all: ## Run all tests including integration (requires running server)
 	@echo "🧪 Running all tests (unit + integration)..."
-	@$(UV) run pytest tests/ -v
+	@echo "💡 Integration tests will use development server on port $(DEVELOPMENT_PORT)"
+	@echo "   To test production server: TEST_SERVER_PORT=8000 make test-all"
+	@TEST_SERVER_PORT=$(DEVELOPMENT_PORT) $(UV) run pytest tests/ -v
 
 .PHONY: test-health
 test-health: ## Quick health check test
-	@echo "🩺 Testing health endpoint..."
-	@curl -s http://localhost:$(PORT)/health | $(UV) run python -m json.tool || echo "❌ Server not running on port $(PORT)"
+	@echo "🩺 Testing health endpoint on development server..."
+	@curl -s http://localhost:$(DEVELOPMENT_PORT)/health | $(UV) run python -m json.tool || echo "❌ Development server not running on port $(DEVELOPMENT_PORT)"
+
+.PHONY: test-health-prod
+test-health-prod: ## Quick health check test for production server
+	@echo "🩺 Testing health endpoint on production server..."
+	@curl -s http://localhost:$(PRODUCTION_PORT)/health | $(UV) run python -m json.tool || echo "❌ Production server not running on port $(PRODUCTION_PORT)"
 
 .PHONY: clean
 clean: ## Clean up cache files and temporary directories

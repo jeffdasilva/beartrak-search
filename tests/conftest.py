@@ -2,6 +2,7 @@
 Test configuration and fixtures for BearTrak Search API tests.
 """
 
+import os
 from collections.abc import AsyncGenerator, Generator
 
 import pytest
@@ -12,8 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from database import Base, RequestForProposalModel, get_async_session
 from main import app
 
-# Test database engine - use in-memory SQLite for tests
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# Test database engine - use file-based SQLite for tests
+# Set environment to test mode to ensure we use the test database
+os.environ["ENVIRONMENT"] = "test"
+TEST_DATABASE_URL = "sqlite+aiosqlite:///./beartrak_test.db"
 
 
 @pytest_asyncio.fixture
@@ -26,8 +29,9 @@ async def test_db_session() -> AsyncGenerator[AsyncSession, None]:
     )
 
     try:
-        # Create tables
+        # Create tables (this will recreate if they exist)
         async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
 
         # Get a session for the test and populate with sample data
