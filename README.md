@@ -40,25 +40,65 @@ The application uses different default ports for each environment to avoid confl
 
 1. **Environment Variables** (recommended):
    ```bash
-   PRODUCTION_PORT=9000 make start      # Production on port 9000
-   DEVELOPMENT_PORT=9001 make start-dev # Development on port 9001
+   BEARTRAK_PRODUCTION_PORT=9000 make start      # Production on port 9000
+   BEARTRAK_DEVELOPMENT_PORT=9001 make start-dev # Development on port 9001
    ```
 
 2. **In `.env` file**:
    ```env
-   PRODUCTION_PORT=9000
-   DEVELOPMENT_PORT=9001
-   ```
-
-3. **Legacy PORT variable** (affects current environment):
-   ```env
-   PORT=9000  # Overrides the default for current ENVIRONMENT
+   BEARTRAK_PRODUCTION_PORT=9000
+   BEARTRAK_DEVELOPMENT_PORT=9001
    ```
 
 You can also override the database URL directly:
 ```env
-DATABASE_URL=sqlite+aiosqlite:///./custom.db
+BEARTRAK_DATABASE_URL=sqlite+aiosqlite:///./custom.db
 ```
+
+## Environment Variables
+
+All environment variables for this project use the `BEARTRAK_` prefix to avoid conflicts with other projects. Here's a complete reference:
+
+### Core Configuration
+- **`BEARTRAK_ENVIRONMENT`**: Application environment (`development`, `production`, `test`)
+  - Default: `development`
+  - Used for: Database selection, debug mode, server behavior
+  
+- **`BEARTRAK_DEBUG`**: Enable debug/verbose logging
+  - Default: `True` in development
+  - Used for: SQL query logging, detailed error messages
+
+- **`BEARTRAK_HOST`**: Server host binding
+  - Default: `0.0.0.0` (all interfaces)
+  - Used for: Server startup
+
+### Port Configuration  
+- **`BEARTRAK_PRODUCTION_PORT`**: Production server port
+  - Default: `8000`
+  
+- **`BEARTRAK_DEVELOPMENT_PORT`**: Development server port  
+  - Default: `8001`
+
+### Database Configuration
+- **`BEARTRAK_PRODUCTION_DB`**: Production database file
+  - Default: `beartrak.db`
+  
+- **`BEARTRAK_DEVELOPMENT_DB`**: Development/test database file
+  - Default: `beartrak_test.db`
+  
+- **`BEARTRAK_DATABASE_URL`**: Complete database URL override
+  - Optional: Overrides environment-based database selection
+  - Example: `sqlite+aiosqlite:///./custom.db`
+
+### CORS Configuration
+- **`BEARTRAK_CORS_ORIGINS`**: Allowed CORS origins (JSON array format)
+  - Default: `["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "http://localhost:8001", "*"]`
+  - Used for: Cross-origin request permissions
+
+### Testing Configuration
+- **`BEARTRAK_TEST_SERVER_PORT`**: Port for integration tests
+  - Default: `8001` (development server)
+  - Used by: `make test-integration` and related commands
 
 ## Prerequisites
 
@@ -86,7 +126,7 @@ beartrak-search/
 ├── Makefile                   # Development workflow commands
 ├── pyproject.toml            # Project configuration and dependencies
 ├── uv.lock                   # Dependency lock file
-├── .env                      # Environment configuration (PORT=8000)
+├── .env                      # Environment configuration (BEARTRAK_ variables)
 ├── .gitignore               # Git ignore patterns
 ├── mypy.ini                 # Type checking configuration
 ├── README.md                # This file
@@ -141,7 +181,7 @@ beartrak-search/
    - Interactive docs: `http://localhost:XXXX/docs` (replace XXXX with port)
    - Health check: `http://localhost:XXXX/health`
 
-> **Port Configuration**: Default ports are 8000 (production) and 8001 (development). You can override these by setting `PRODUCTION_PORT` and `DEVELOPMENT_PORT` environment variables, or use the `PORT` variable in `.env` for the current environment.
+> **Port Configuration**: Default ports are 8000 (production) and 8001 (development). You can override these by setting `BEARTRAK_PRODUCTION_PORT` and `BEARTRAK_DEVELOPMENT_PORT` environment variables in your `.env` file or as environment variables.
 
 ## Development Workflow
 
@@ -216,7 +256,7 @@ make test-all
 
 # To test against production server instead:
 # Terminal 1: make start
-# Terminal 2: TEST_SERVER_PORT=8000 make test-integration
+# Terminal 2: BEARTRAK_TEST_SERVER_PORT=8000 make test-integration
 ```
 
 **Note**: GitHub CI automatically runs integration tests against the development server (port 8001) to match the local development workflow.

@@ -18,22 +18,22 @@ def get_database_url() -> str:
     """
     Get the database URL based on environment configuration.
     
-    In production mode (ENVIRONMENT=production), uses beartrak.db
+    In production mode (BEARTRAK_ENVIRONMENT=production), uses beartrak.db
     In development/test mode (default), uses beartrak_test.db
     
-    Can be overridden with DATABASE_URL environment variable.
+    Can be overridden with BEARTRAK_DATABASE_URL environment variable.
     """
-    # Check if DATABASE_URL is explicitly set
-    if database_url := os.getenv("DATABASE_URL"):
+    # Check if BEARTRAK_DATABASE_URL is explicitly set
+    if database_url := os.getenv("BEARTRAK_DATABASE_URL"):
         return database_url
     
     # Determine database file based on environment
-    environment = os.getenv("ENVIRONMENT", "development").lower()
+    environment = os.getenv("BEARTRAK_ENVIRONMENT", "development").lower()
     
     if environment == "production":
-        db_file = os.getenv("PRODUCTION_DB", "beartrak.db")
+        db_file = os.getenv("BEARTRAK_PRODUCTION_DB", "beartrak.db")
     else:  # development, test, or any other value
-        db_file = os.getenv("DEVELOPMENT_DB", "beartrak_test.db")
+        db_file = os.getenv("BEARTRAK_DEVELOPMENT_DB", "beartrak_test.db")
     
     return f"sqlite+aiosqlite:///./{db_file}"
 
@@ -42,7 +42,7 @@ DATABASE_URL = get_database_url()
 # Create async engine
 engine = create_async_engine(
     DATABASE_URL,
-    echo=bool(os.getenv("DEBUG", False)),  # Log SQL queries in debug mode
+    echo=bool(os.getenv("BEARTRAK_DEBUG", False)),  # Log SQL queries in debug mode
 )
 
 # Create async session factory

@@ -3,9 +3,9 @@
 # Variables
 PYTHON_FILES := main.py tests/
 UV := uv
-# Port configuration - can be overridden via environment variables
-PRODUCTION_PORT := $(shell echo $${PRODUCTION_PORT:-8000})
-DEVELOPMENT_PORT := $(shell echo $${DEVELOPMENT_PORT:-8001})
+# Port configuration - can be overridden via BEARTRAK_ environment variables
+PRODUCTION_PORT := $(shell echo $${BEARTRAK_PRODUCTION_PORT:-8000})
+DEVELOPMENT_PORT := $(shell echo $${BEARTRAK_DEVELOPMENT_PORT:-8001})
 
 .PHONY: help
 help: ## Show this help message
@@ -77,7 +77,7 @@ start: install ## Start the production server
 	@echo "🗄️  Using production database: beartrak.db"
 	@echo ""
 	@echo "🔄 Starting server..."
-	@ENVIRONMENT=production $(UV) run uvicorn main:app --host 0.0.0.0 --port $(PRODUCTION_PORT) --reload
+	@BEARTRAK_ENVIRONMENT=production $(UV) run uvicorn main:app --host 0.0.0.0 --port $(PRODUCTION_PORT) --reload
 
 .PHONY: start-dev
 start-dev: install ## Start the development server
@@ -88,7 +88,7 @@ start-dev: install ## Start the development server
 	@echo "🗄️  Using development database: beartrak_test.db"
 	@echo ""
 	@echo "🔄 Starting server..."
-	@ENVIRONMENT=development $(UV) run uvicorn main:app --host 0.0.0.0 --port $(DEVELOPMENT_PORT) --reload
+	@BEARTRAK_ENVIRONMENT=development $(UV) run uvicorn main:app --host 0.0.0.0 --port $(DEVELOPMENT_PORT) --reload
 
 .PHONY: server
 server: start-dev ## Alias for start-dev (backward compatibility)
@@ -183,15 +183,15 @@ test-legacy: ## Run the manual API test script
 test-integration: ## Run integration tests (requires running server)
 	@echo "🧪 Running integration tests..."
 	@echo "💡 Assuming development server on port $(DEVELOPMENT_PORT)"
-	@echo "   To test production server: TEST_SERVER_PORT=8000 make test-integration"
-	@TEST_SERVER_PORT=$(DEVELOPMENT_PORT) $(UV) run python tests/test_integration.py
+	@echo "   To test production server: BEARTRAK_TEST_SERVER_PORT=8000 make test-integration"
+	@BEARTRAK_TEST_SERVER_PORT=$(DEVELOPMENT_PORT) $(UV) run python tests/test_integration.py
 
 .PHONY: test-all
 test-all: ## Run all tests including integration (requires running server)
 	@echo "🧪 Running all tests (unit + integration)..."
 	@echo "💡 Integration tests will use development server on port $(DEVELOPMENT_PORT)"
-	@echo "   To test production server: TEST_SERVER_PORT=8000 make test-all"
-	@TEST_SERVER_PORT=$(DEVELOPMENT_PORT) $(UV) run pytest tests/ -v
+	@echo "   To test production server: BEARTRAK_TEST_SERVER_PORT=8000 make test-all"
+	@BEARTRAK_TEST_SERVER_PORT=$(DEVELOPMENT_PORT) $(UV) run pytest tests/ -v
 
 .PHONY: test-health
 test-health: ## Quick health check test

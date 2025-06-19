@@ -40,9 +40,21 @@ app = FastAPI(
 )
 
 # Configure CORS to allow requests from your frontend
+cors_origins = ["*"]  # Default fallback
+cors_origins_env = os.getenv("BEARTRAK_CORS_ORIGINS")
+if cors_origins_env:
+    # Parse the JSON-like string from environment
+    import json
+
+    try:
+        cors_origins = json.loads(cors_origins_env)
+    except json.JSONDecodeError:
+        # Fallback to default if parsing fails
+        cors_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your specific domain
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
     allow_headers=["*"],
@@ -317,8 +329,16 @@ async def delete_rfp(
 
 def main() -> None:
     """Main entry point for the application"""
-    host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8000"))
+    host = os.getenv("BEARTRAK_HOST", "0.0.0.0")
+
+    # Determine port based on environment
+    environment = os.getenv("BEARTRAK_ENVIRONMENT", "development").lower()
+    if environment == "production":
+        default_port = int(os.getenv("BEARTRAK_PRODUCTION_PORT", "8000"))
+    else:
+        default_port = int(os.getenv("BEARTRAK_DEVELOPMENT_PORT", "8001"))
+
+    port = default_port
     uvicorn.run("main:app", host=host, port=port, reload=True)
 
 

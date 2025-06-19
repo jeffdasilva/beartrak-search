@@ -26,12 +26,12 @@ def wait_for_server(base_url: str, timeout: int = 30) -> bool:
 def test_api_integration() -> None:
     """Integration test for the BearTrak Search API."""
     # Use environment variable for port, default to development port
-    port = os.getenv("TEST_SERVER_PORT", "8001")  # Default to dev server port
+    port = os.getenv("BEARTRAK_TEST_SERVER_PORT", "8001")  # Default to dev server port
     base_url = f"http://localhost:{port}"
 
     # Note: This test requires the server to be running
     # Run with: make start-dev (in background) && make test-integration
-    # Or: TEST_SERVER_PORT=8000 make test-integration (for production server)
+    # Or: BEARTRAK_TEST_SERVER_PORT=8000 make test-integration (for production server)
 
     try:
         # Test health endpoint
@@ -73,7 +73,7 @@ def test_api_integration() -> None:
         )
         print("   Run: make start-dev (in another terminal)")
         print(
-            "   Or: TEST_SERVER_PORT=8000 make test-integration (for production server)"
+            "   Or: BEARTRAK_TEST_SERVER_PORT=8000 make test-integration (for production server)"
         )
         raise
     except Exception as e:
