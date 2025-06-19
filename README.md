@@ -219,6 +219,8 @@ make test-all
 # Terminal 2: TEST_SERVER_PORT=8000 make test-integration
 ```
 
+**Note**: GitHub CI automatically runs integration tests against the development server (port 8001) to match the local development workflow.
+
 #### Project Maintenance
 ```bash
 # Get project information

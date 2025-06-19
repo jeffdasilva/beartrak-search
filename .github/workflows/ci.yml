@@ -100,19 +100,19 @@ jobs:
     
     - name: Start the server in background
       run: |
-        uv run uvicorn main:app --host 0.0.0.0 --port 8000 &
+        make start-dev &
         echo $! > server.pid
         # Wait for server to start
         sleep 5
         # Verify server is running
-        curl -f http://localhost:8000/health || exit 1
+        curl -f http://localhost:8001/health || exit 1
     
     - name: Run integration tests
       run: uv run python tests/test_integration.py
     
     - name: Test integration Makefile targets
       run: |
-        # Test makefile targets that require a running server
+        # Test makefile targets that require a running server (development port 8001)
         make test-health
         make test-integration
     
