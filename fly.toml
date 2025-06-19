@@ -1,0 +1,29 @@
+# fly.toml app configuration file generated for beartrak-search on 2025-06-18T23:44:32-07:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'beartrak-search'
+primary_region = 'lax'
+
+[build]
+
+[env]
+  BEARTRAK_ENVIRONMENT = "production"
+  BEARTRAK_HOST = "0.0.0.0"
+  BEARTRAK_PRODUCTION_PORT = "8080"
+  BEARTRAK_DEBUG = "False"
+  BEARTRAK_PRODUCTION_DB = "beartrak.db"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
