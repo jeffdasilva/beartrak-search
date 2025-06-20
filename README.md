@@ -575,6 +575,78 @@ The database file is stored in `/app/data/beartrak.db` inside the container and 
 
 **Important**: The database starts empty. Use the API endpoints to add RFP data, or import data from external sources (like the beartrak-scrape project).
 
+## Fly.io Deployment
+
+The application is configured for deployment on Fly.io with persistent database storage.
+
+### Prerequisites:
+
+1. Install the Fly CLI: `https://fly.io/docs/getting-started/installing-flyctl/`
+2. Login to Fly.io: `flyctl auth login`
+
+### Initial Setup:
+
+**First-time deployment requires creating a persistent volume:**
+
+```bash
+# Create a persistent volume for the database (only needed once)
+flyctl volumes create beartrak_data --region lax --size 1
+
+# Deploy the application
+flyctl deploy
+```
+
+### Database Persistence:
+
+- **Volume Mount**: Database is stored in a Fly.io volume mounted at `/data`
+- **Persistence**: Data survives machine suspend/wake cycles and deployments
+- **Location**: Database file is at `/data/beartrak.db` in the container
+- **Size**: Volume is 1GB (can be increased if needed)
+
+### Important Notes:
+
+- **Empty Start**: Database starts empty on first deployment
+- **Volume Required**: The `beartrak_data` volume must be created before first deployment
+- **Regional**: Volume is region-specific (configured for `lax` region)
+- **Backup**: Consider backing up the volume data for production use
+
+### Useful Commands:
+
+```bash
+# Deploy application
+flyctl deploy
+
+# View logs
+flyctl logs
+
+# SSH into the running machine
+flyctl ssh console
+
+# Check volume status
+flyctl volumes list
+
+# Scale to zero (suspend)
+flyctl scale count 0
+
+# Scale back up
+flyctl scale count 1
+```
+
+### Volume Management:
+
+```bash
+# List volumes
+flyctl volumes list
+
+# Create additional volume (if needed)
+flyctl volumes create beartrak_data --region lax --size 2
+
+# Delete volume (⚠️ destroys data)
+flyctl volumes delete <volume-id>
+```
+
+The application automatically handles database initialization and directory creation when the volume is mounted.
+
 ## Dependencies
 
 - **FastAPI**: Web framework

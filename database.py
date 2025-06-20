@@ -48,6 +48,17 @@ def get_engine() -> AsyncEngine:
     """Get or create the database engine."""
     global engine
     if engine is None:
+        # Ensure database directory exists for SQLite files
+        import pathlib
+        
+        # Extract database file path from DATABASE_URL if it's a SQLite URL
+        if DATABASE_URL.startswith("sqlite"):
+            # Remove sqlite+aiosqlite:/// prefix to get the file path
+            db_file_path = DATABASE_URL.replace("sqlite+aiosqlite:///", "")
+            if db_file_path and "/" in db_file_path:
+                # Create parent directories if they don't exist
+                pathlib.Path(db_file_path).parent.mkdir(parents=True, exist_ok=True)
+        
         engine = create_async_engine(
             DATABASE_URL,
             echo=bool(os.getenv("BEARTRAK_DEBUG", False)),

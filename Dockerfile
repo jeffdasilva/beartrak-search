@@ -5,7 +5,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Create data directory for database persistence
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data /data
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -29,7 +29,7 @@ ENV BEARTRAK_ENVIRONMENT=production
 ENV BEARTRAK_HOST=0.0.0.0
 ENV BEARTRAK_PRODUCTION_PORT=8080
 ENV BEARTRAK_DEBUG=False
-ENV BEARTRAK_PRODUCTION_DB=/app/data/beartrak.db
+ENV BEARTRAK_PRODUCTION_DB=/data/beartrak.db
 
 # Create volume for database persistence
 VOLUME ["/app/data"]

@@ -13,7 +13,7 @@ primary_region = 'lax'
   BEARTRAK_HOST = "0.0.0.0"
   BEARTRAK_PRODUCTION_PORT = "8080"
   BEARTRAK_DEBUG = "False"
-  BEARTRAK_PRODUCTION_DB = "beartrak.db"
+  BEARTRAK_PRODUCTION_DB = "/data/beartrak.db"
 
 [http_service]
   internal_port = 8080
@@ -27,3 +27,7 @@ primary_region = 'lax'
   memory = '512mb'
   cpu_kind = 'shared'
   cpus = 1
+
+[mounts]
+  source = 'beartrak_data'
+  destination = '/data'
