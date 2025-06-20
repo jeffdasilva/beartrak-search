@@ -16,8 +16,10 @@ A FastAPI backend for the BearTrak RFP Search application that provides search f
 
 The application uses SQLite databases with different files for each environment:
 
-- **Production**: `beartrak.db` - Clean database for production use  
-- **Development/Testing**: `beartrak_test.db` - Shared database for development and testing
+- **Production**: `beartrak.db` - Starts empty, ready for production data  
+- **Development/Testing**: `beartrak_test.db` - For development and testing
+
+**Note**: As of the latest version, the database starts empty in all environments. Sample data is no longer automatically populated. Use the API endpoints to add RFP data, or import data from external sources.
 
 The database selection is controlled by the `ENVIRONMENT` variable in `.env`:
 
@@ -452,6 +454,57 @@ make format-check
 ```
 
 This ensures that local development commands match exactly what CI expects, preventing "works on my machine" issues.
+
+## Docker Deployment
+
+The application includes Docker support with database persistence.
+
+### Key Features:
+- **Empty Database**: Database starts empty (no prepopulated sample data)
+- **Persistent Storage**: Database persists between container restarts using Docker volumes
+- **Production Ready**: Optimized for production deployment
+
+### Quick Start with Docker Compose:
+
+```bash
+# Start the application with persistent database
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the application
+docker-compose down
+```
+
+The application will be available at `http://localhost:8080`.
+
+### Manual Docker Build:
+
+```bash
+# Build the Docker image
+docker build -t beartrak-search .
+
+# Run with volume for database persistence
+docker run -d \
+  --name beartrak-search \
+  -p 8080:8080 \
+  -v beartrak_data:/app/data \
+  beartrak-search
+
+# Or run with bind mount to a local directory
+docker run -d \
+  --name beartrak-search \
+  -p 8080:8080 \
+  -v $(pwd)/data:/app/data \
+  beartrak-search
+```
+
+### Database Persistence:
+
+The database file is stored in `/app/data/beartrak.db` inside the container and is mounted to a Docker volume or host directory to ensure data persists between container restarts.
+
+**Important**: The database starts empty. Use the API endpoints to add RFP data, or import data from external sources (like the beartrak-scrape project).
 
 ## Dependencies
 

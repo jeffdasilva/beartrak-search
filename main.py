@@ -16,7 +16,6 @@ from database import (
     get_async_session,
     get_rfp_by_id_db,
     init_database,
-    populate_sample_data,
     search_rfps_db,
     update_rfp_db,
 )
@@ -28,7 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager for startup and shutdown events."""
     # Startup
     await init_database()
-    await populate_sample_data()
+    # Note: populate_sample_data() removed - database starts empty
     yield
     # Shutdown (if needed)
 
