@@ -50,7 +50,7 @@ def test_api_integration() -> None:
         test_rfp = {
             "name": "Software Development Project",
             "url": "https://example.com/rfp/software",
-            "description": "Looking for a software development partner to build a modern web application."
+            "description": "Looking for a software development partner to build a modern web application.",
         }
         response = requests.post(f"{base_url}/api/rfps", json=test_rfp, timeout=5)
         assert response.status_code == 201
