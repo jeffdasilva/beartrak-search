@@ -31,3 +31,4 @@ primary_region = 'lax'
 [mounts]
   source = 'beartrak_data'
   destination = '/data'
+  size_gb = 1
