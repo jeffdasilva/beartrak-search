@@ -8,7 +8,7 @@ from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text, select
+from sqlalchemy import DateTime, String, Text, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -97,6 +97,17 @@ async def init_database() -> None:
     """
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+
+async def clear_database() -> None:
+    """
+    Clear all RFP data from the database.
+    This removes all records but keeps the table structure intact.
+    """
+    async with async_session_maker() as session:
+        # Delete all RFP records
+        await session.execute(delete(RequestForProposalModel))
+        await session.commit()
 
 
 async def populate_sample_data() -> None:

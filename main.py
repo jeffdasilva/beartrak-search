@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import (
     RequestForProposalModel,
+    clear_database,
     create_rfp_db,
     delete_rfp_db,
     get_all_rfps_db,
@@ -324,6 +325,24 @@ async def delete_rfp(
     success = await delete_rfp_db(session, rfp_id)
     if not success:
         raise HTTPException(status_code=404, detail="RFP not found")
+
+
+# Admin Endpoints
+
+
+@app.delete("/api/admin/clear", status_code=200)
+async def clear_database_endpoint() -> dict[str, str]:
+    """
+    Admin endpoint to clear all RFP data from the database.
+
+    This removes all RFP records but keeps the table structure intact.
+    Use with caution - this action cannot be undone.
+
+    Returns:
+        Success message confirming the database was cleared
+    """
+    await clear_database()
+    return {"message": "Database cleared successfully"}
 
 
 def main() -> None:

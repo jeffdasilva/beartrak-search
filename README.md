@@ -300,6 +300,75 @@ Health check endpoint.
 
 Detailed health check with service information.
 
+### REST API Endpoints
+
+The application also provides full CRUD operations for RFP management:
+
+#### GET /api/rfps
+Get all RFPs.
+
+**Response**: `200 OK`
+```json
+[
+  {
+    "id": 1,
+    "name": "Example RFP",
+    "url": "https://example.com/rfp",
+    "description": "RFP description",
+    "updated_at": "2024-01-01T00:00:00"
+  }
+]
+```
+
+#### GET /api/rfps/{id}
+Get a specific RFP by ID.
+
+**Response**: `200 OK` (RFP found) or `404 Not Found`
+
+#### POST /api/rfps
+Create a new RFP.
+
+**Request**:
+```json
+{
+  "name": "New RFP",
+  "url": "https://example.com/new-rfp",
+  "description": "Description of the RFP"
+}
+```
+
+**Response**: `201 Created`
+
+#### PUT /api/rfps/{id}
+Update an existing RFP.
+
+**Request**: Same as POST
+**Response**: `200 OK` (updated) or `404 Not Found`
+
+#### DELETE /api/rfps/{id}
+Delete an RFP by ID.
+
+**Response**: `204 No Content` (deleted) or `404 Not Found`
+
+### Admin Endpoints
+
+#### DELETE /api/admin/clear
+**⚠️ CAUTION**: Clears all RFP data from the database.
+
+This admin endpoint removes all RFP records while keeping the table structure intact. Use with extreme caution as this action cannot be undone.
+
+**Response**: `200 OK`
+```json
+{
+  "message": "Database cleared successfully"
+}
+```
+
+**Usage Example**:
+```bash
+curl -X DELETE http://localhost:8001/api/admin/clear
+```
+
 ## Frontend Integration
 
 This backend is designed to work with the BearTrak Search frontend. The frontend should:

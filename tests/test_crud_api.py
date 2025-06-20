@@ -60,6 +60,35 @@ class TestCRUDBasic:
             assert response.status_code == 404
             assert response.json() == {"detail": "RFP not found"}
 
+    def test_admin_clear_database(self) -> None:
+        """Test the admin endpoint to clear the database."""
+        with TestClient(app) as client:
+            # First, create an RFP to ensure there's data to clear
+            rfp_data = {
+                "name": "Test RFP for clearing",
+                "url": "https://example.com/test",
+                "description": "This RFP will be cleared",
+            }
+            create_response = client.post("/api/rfps", json=rfp_data)
+            assert create_response.status_code == 201
+
+            # Verify the RFP was created
+            get_response = client.get("/api/rfps")
+            assert get_response.status_code == 200
+            rfps_before = get_response.json()
+            assert len(rfps_before) >= 1
+
+            # Clear the database
+            clear_response = client.delete("/api/admin/clear")
+            assert clear_response.status_code == 200
+            assert clear_response.json() == {"message": "Database cleared successfully"}
+
+            # Verify the database is now empty
+            get_response_after = client.get("/api/rfps")
+            assert get_response_after.status_code == 200
+            rfps_after = get_response_after.json()
+            assert len(rfps_after) == 0
+
     def test_get_all_rfps_endpoint_exists(self) -> None:
         """Test that the get all RFPs endpoint exists and returns a list."""
         with TestClient(app) as client:
