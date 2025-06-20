@@ -37,13 +37,19 @@ app = FastAPI(
     title="BearTrak RFP Search API",
     description="Backend API for BearTrak RFP Search frontend with SQLite database",
     lifespan=lifespan,
+    # Optimize for production - disable docs generation in production
+    docs_url="/docs"
+    if os.getenv("BEARTRAK_ENVIRONMENT", "development").lower() != "production"
+    else None,
+    redoc_url="/redoc"
+    if os.getenv("BEARTRAK_ENVIRONMENT", "development").lower() != "production"
+    else None,
 )
 
 # Configure CORS to allow requests from your frontend
-cors_origins = ["*"]  # Default fallback
 cors_origins_env = os.getenv("BEARTRAK_CORS_ORIGINS")
 if cors_origins_env:
-    # Parse the JSON-like string from environment
+    # Parse the JSON-like string from environment only if set
     import json
 
     try:
@@ -51,6 +57,9 @@ if cors_origins_env:
     except json.JSONDecodeError:
         # Fallback to default if parsing fails
         cors_origins = ["*"]
+else:
+    # Default origins when environment variable is not set
+    cors_origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,

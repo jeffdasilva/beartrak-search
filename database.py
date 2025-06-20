@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import DateTime, String, Text, delete, select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine, AsyncEngine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -39,18 +39,35 @@ def get_database_url() -> str:
 
 DATABASE_URL = get_database_url()
 
-# Create async engine
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=bool(os.getenv("BEARTRAK_DEBUG", False)),  # Log SQL queries in debug mode
-)
+# Create async engine (lazy initialization for better cold start)
+engine: AsyncEngine | None = None
+async_session_maker: async_sessionmaker[AsyncSession] | None = None
 
-# Create async session factory
-async_session_maker = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+
+def get_engine() -> AsyncEngine:
+    """Get or create the database engine."""
+    global engine
+    if engine is None:
+        engine = create_async_engine(
+            DATABASE_URL,
+            echo=bool(os.getenv("BEARTRAK_DEBUG", False)),
+            # Optimize for faster startup
+            pool_pre_ping=False,  # Skip connection health checks on startup
+            pool_recycle=3600,    # Recycle connections after 1 hour
+        )
+    return engine
+
+
+def get_session_maker() -> async_sessionmaker[AsyncSession]:
+    """Get or create the async session maker."""
+    global async_session_maker
+    if async_session_maker is None:
+        async_session_maker = async_sessionmaker(
+            get_engine(),
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+    return async_session_maker
 
 
 class Base(DeclarativeBase):
@@ -83,7 +100,8 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     Dependency to get an async database session.
     This will be used with FastAPI's dependency injection system.
     """
-    async with async_session_maker() as session:
+    session_maker = get_session_maker()
+    async with session_maker() as session:
         try:
             yield session
         finally:
@@ -95,6 +113,7 @@ async def init_database() -> None:
     Initialize the database by creating all tables.
     This should be called on application startup.
     """
+    engine = get_engine()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -104,7 +123,8 @@ async def clear_database() -> None:
     Clear all RFP data from the database.
     This removes all records but keeps the table structure intact.
     """
-    async with async_session_maker() as session:
+    session_maker = get_session_maker()
+    async with session_maker() as session:
         # Delete all RFP records
         await session.execute(delete(RequestForProposalModel))
         await session.commit()
@@ -115,7 +135,8 @@ async def populate_sample_data() -> None:
     Populate the database with sample RFP data if it's empty.
     This replaces the hardcoded sample data.
     """
-    async with async_session_maker() as session:
+    session_maker = get_session_maker()
+    async with session_maker() as session:
         # Check if data already exists
         result = await session.execute(select(RequestForProposalModel).limit(1))
         if result.first() is not None:
