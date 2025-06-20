@@ -35,7 +35,7 @@ def get_database_url() -> str:
     else:  # development, test, or any other value
         db_file = os.getenv("BEARTRAK_DEVELOPMENT_DB", "beartrak_test.db")
     
-    return f"sqlite+aiosqlite:///./{db_file}"
+    return f"sqlite+aiosqlite:///{db_file}"
 
 DATABASE_URL = get_database_url()
 
