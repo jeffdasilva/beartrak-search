@@ -42,7 +42,20 @@ def test_api_integration() -> None:
         assert health_data["status"] == "healthy"
         assert health_data["service"] == "BearTrak Search API"
 
-        # Test search endpoint with valid query
+        # Clear any existing data first
+        response = requests.delete(f"{base_url}/api/admin/clear", timeout=5)
+        assert response.status_code == 200
+
+        # Create test data for search functionality
+        test_rfp = {
+            "name": "Software Development Project",
+            "url": "https://example.com/rfp/software",
+            "description": "Looking for a software development partner to build a modern web application."
+        }
+        response = requests.post(f"{base_url}/api/rfps", json=test_rfp, timeout=5)
+        assert response.status_code == 201
+
+        # Test search endpoint with valid query that should find results
         search_data = {"query": "software"}
         response = requests.post(f"{base_url}/api/search", data=search_data, timeout=5)
         assert response.status_code == 200
@@ -52,6 +65,19 @@ def test_api_integration() -> None:
         assert "<table>" in html_content
         assert "<thead>" in html_content
         assert "<tbody>" in html_content
+        assert "Software Development Project" in html_content
+
+        # Test search endpoint with query that should find no results
+        no_results_search_data = {"query": "nonexistent"}
+        response = requests.post(
+            f"{base_url}/api/search", data=no_results_search_data, timeout=5
+        )
+        assert response.status_code == 200
+
+        html_content = response.text
+        # Should return no-results div for queries with no matches
+        assert '<div class="no-results">' in html_content
+        assert 'No RFPs found for "nonexistent"' in html_content
 
         # Test search endpoint with empty query
         empty_search_data = {"query": ""}
@@ -64,6 +90,10 @@ def test_api_integration() -> None:
         # Empty query should return no-results div
         assert '<div class="no-results">' in html_content
         assert "Start typing to search..." in html_content
+
+        # Clean up test data
+        response = requests.delete(f"{base_url}/api/admin/clear", timeout=5)
+        assert response.status_code == 200
 
         print("✅ Integration tests passed!")
 
