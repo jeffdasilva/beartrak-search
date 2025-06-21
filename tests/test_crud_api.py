@@ -81,7 +81,11 @@ class TestCRUDBasic:
             # Clear the database
             clear_response = client.delete("/api/admin/clear")
             assert clear_response.status_code == 200
-            assert clear_response.json() == {"message": "Database cleared successfully"}
+            response_data = clear_response.json()
+            assert "message" in response_data
+            assert "deleted_count" in response_data
+            assert response_data["deleted_count"] >= 1
+            assert "Database cleared successfully" in response_data["message"]
 
             # Verify the database is now empty
             get_response_after = client.get("/api/rfps")
@@ -214,3 +218,88 @@ class TestCRUDIntegration:
 
             # Clean up
             client.delete(f"/api/rfps/{created_data['id']}")
+
+    def test_admin_clear_database_with_date(self) -> None:
+        """Test the admin endpoint to clear database with date filter."""
+        from datetime import datetime, timedelta, timezone
+
+        with TestClient(app) as client:
+            # Create test RFPs
+            old_rfp_data = {
+                "name": "Old RFP",
+                "url": "https://example.com/old",
+                "description": "This is an old RFP",
+            }
+            new_rfp_data = {
+                "name": "New RFP",
+                "url": "https://example.com/new",
+                "description": "This is a new RFP",
+            }
+
+            # Create both RFPs
+            client.post("/api/rfps", json=old_rfp_data)
+            client.post("/api/rfps", json=new_rfp_data)
+
+            # Verify both RFPs were created
+            get_response = client.get("/api/rfps")
+            assert get_response.status_code == 200
+            rfps_before = get_response.json()
+            assert len(rfps_before) >= 2
+
+            # Clear RFPs older than tomorrow (should clear all current RFPs)
+            tomorrow = datetime.now(tz=timezone.utc) + timedelta(days=1)
+            # Format datetime to avoid timezone format issues
+            tomorrow_str = tomorrow.strftime("%Y-%m-%dT%H:%M:%S")
+            clear_response = client.delete(
+                f"/api/admin/clear?older_than={tomorrow_str}"
+            )
+            assert clear_response.status_code == 200
+            response_data = clear_response.json()
+            assert "message" in response_data
+            assert "deleted_count" in response_data
+            assert response_data["deleted_count"] >= 2
+            assert tomorrow.date().isoformat() in response_data["message"]
+
+            # Verify the database is now empty
+            get_response_after = client.get("/api/rfps")
+            assert get_response_after.status_code == 200
+            rfps_after = get_response_after.json()
+            assert len(rfps_after) == 0
+
+    def test_admin_clear_database_with_future_date(self) -> None:
+        """Test the admin endpoint with a date in the past (should clear nothing)."""
+        from datetime import datetime, timedelta, timezone
+
+        with TestClient(app) as client:
+            # Create a test RFP
+            rfp_data = {
+                "name": "Recent RFP",
+                "url": "https://example.com/recent",
+                "description": "This is a recent RFP",
+            }
+            client.post("/api/rfps", json=rfp_data)
+
+            # Verify RFP was created
+            get_response = client.get("/api/rfps")
+            assert get_response.status_code == 200
+            rfps_before = get_response.json()
+            assert len(rfps_before) >= 1
+
+            # Try to clear RFPs older than yesterday (should clear nothing)
+            yesterday = datetime.now(tz=timezone.utc) - timedelta(days=1)
+            # Format datetime to avoid timezone format issues
+            yesterday_str = yesterday.strftime("%Y-%m-%dT%H:%M:%S")
+            clear_response = client.delete(
+                f"/api/admin/clear?older_than={yesterday_str}"
+            )
+            assert clear_response.status_code == 200
+            response_data = clear_response.json()
+            assert "message" in response_data
+            assert "deleted_count" in response_data
+            assert response_data["deleted_count"] == 0
+
+            # Verify the RFP is still there
+            get_response_after = client.get("/api/rfps")
+            assert get_response_after.status_code == 200
+            rfps_after = get_response_after.json()
+            assert len(rfps_after) >= 1

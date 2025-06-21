@@ -1,9 +1,10 @@
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 import uvicorn
-from fastapi import Depends, FastAPI, Form, HTTPException
+from fastapi import Depends, FastAPI, Form, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -340,18 +341,34 @@ async def delete_rfp(
 
 
 @app.delete("/api/admin/clear", status_code=200)
-async def clear_database_endpoint() -> dict[str, str]:
+async def clear_database_endpoint(
+    older_than: datetime | None = Query(
+        None,
+        description="Only delete RFPs older than this date (ISO format: YYYY-MM-DDTHH:MM:SS)",
+    ),
+) -> dict[str, str | int]:
     """
-    Admin endpoint to clear all RFP data from the database.
+    Admin endpoint to clear RFP data from the database.
 
-    This removes all RFP records but keeps the table structure intact.
-    Use with caution - this action cannot be undone.
+    Args:
+        older_than: Optional datetime. If provided, only deletes RFPs older than this date.
+                   If not provided, deletes all RFPs.
+                   Format: ISO datetime string (e.g., "2024-01-01T00:00:00")
 
     Returns:
-        Success message confirming the database was cleared
+        Success message with count of deleted RFPs
+
+    This removes RFP records but keeps the table structure intact.
+    Use with caution - this action cannot be undone.
     """
-    await clear_database()
-    return {"message": "Database cleared successfully"}
+    deleted_count = await clear_database(older_than)
+
+    if older_than is None:
+        message = f"Database cleared successfully. Deleted {deleted_count} RFPs."
+    else:
+        message = f"Deleted {deleted_count} RFPs older than {older_than.isoformat()}."
+
+    return {"message": message, "deleted_count": deleted_count}
 
 
 def main() -> None:

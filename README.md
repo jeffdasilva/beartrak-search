@@ -353,20 +353,28 @@ Delete an RFP by ID.
 ### Admin Endpoints
 
 #### DELETE /api/admin/clear
-**⚠️ CAUTION**: Clears all RFP data from the database.
+**⚠️ CAUTION**: Clears RFP data from the database.
 
-This admin endpoint removes all RFP records while keeping the table structure intact. Use with extreme caution as this action cannot be undone.
+This admin endpoint removes RFP records while keeping the table structure intact. Use with extreme caution as this action cannot be undone.
+
+**Query Parameters**:
+- `older_than` (optional): ISO datetime string (e.g., "2024-01-01T00:00:00"). If provided, only deletes RFPs older than this date. If not provided, deletes all RFPs.
 
 **Response**: `200 OK`
 ```json
 {
-  "message": "Database cleared successfully"
+  "message": "Database cleared successfully. Deleted 5 RFPs.",
+  "deleted_count": 5
 }
 ```
 
-**Usage Example**:
+**Usage Examples**:
 ```bash
+# Clear all RFPs
 curl -X DELETE http://localhost:8001/api/admin/clear
+
+# Clear only RFPs older than a specific date
+curl -X DELETE "http://localhost:8001/api/admin/clear?older_than=2024-01-01T00:00:00"
 ```
 
 ## Frontend Integration

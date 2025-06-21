@@ -9,32 +9,38 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import DateTime, String, Text, delete, select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine, AsyncEngine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
+
 
 # Database configuration
 def get_database_url() -> str:
     """
     Get the database URL based on environment configuration.
-    
+
     In production mode (BEARTRAK_ENVIRONMENT=production), uses beartrak.db
     In development/test mode (default), uses beartrak_test.db
-    
+
     Can be overridden with BEARTRAK_DATABASE_URL environment variable.
     """
     # Check if BEARTRAK_DATABASE_URL is explicitly set
     if database_url := os.getenv("BEARTRAK_DATABASE_URL"):
         return database_url
-    
+
     # Determine database file based on environment
     environment = os.getenv("BEARTRAK_ENVIRONMENT", "development").lower()
-    
+
     if environment == "production":
         db_file = os.getenv("BEARTRAK_PRODUCTION_DB", "beartrak.db")
     else:  # development, test, or any other value
         db_file = os.getenv("BEARTRAK_DEVELOPMENT_DB", "beartrak_test.db")
-    
+
     return f"sqlite+aiosqlite:///{db_file}"
 
 DATABASE_URL = get_database_url()
@@ -50,7 +56,7 @@ def get_engine() -> AsyncEngine:
     if engine is None:
         # Ensure database directory exists for SQLite files
         import pathlib
-        
+
         # Extract database file path from DATABASE_URL if it's a SQLite URL
         if DATABASE_URL.startswith("sqlite"):
             # Remove sqlite+aiosqlite:/// prefix to get the file path
@@ -58,7 +64,7 @@ def get_engine() -> AsyncEngine:
             if db_file_path and "/" in db_file_path:
                 # Create parent directories if they don't exist
                 pathlib.Path(db_file_path).parent.mkdir(parents=True, exist_ok=True)
-        
+
         engine = create_async_engine(
             DATABASE_URL,
             echo=bool(os.getenv("BEARTRAK_DEBUG", False)),
@@ -129,16 +135,33 @@ async def init_database() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
 
-async def clear_database() -> None:
+async def clear_database(older_than: datetime | None = None) -> int:
     """
-    Clear all RFP data from the database.
-    This removes all records but keeps the table structure intact.
+    Clear RFP data from the database.
+
+    Args:
+        older_than: If provided, only delete RFPs older than this date.
+                   If None, delete all RFPs.
+
+    Returns:
+        Number of RFPs deleted
+
+    This removes records but keeps the table structure intact.
     """
     session_maker = get_session_maker()
     async with session_maker() as session:
-        # Delete all RFP records
-        await session.execute(delete(RequestForProposalModel))
+        if older_than is None:
+            # Delete all RFP records
+            result = await session.execute(delete(RequestForProposalModel))
+        else:
+            # Delete only RFPs older than the specified date
+            result = await session.execute(
+                delete(RequestForProposalModel).where(
+                    RequestForProposalModel.updated_at < older_than
+                )
+            )
         await session.commit()
+        return result.rowcount or 0
 
 
 async def populate_sample_data() -> None:
